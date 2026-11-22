@@ -1,0 +1,7 @@
+{
+  "name": "com.raymin.cookie_exporter",
+  "description": "cookie-exporter 扩展的本机助手：把 Cookie 直写 keys.env",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://__EXTENSION_ID__/"],
+  "path": "__HOST_PATH__"
+}

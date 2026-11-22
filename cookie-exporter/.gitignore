@@ -1,0 +1,3 @@
+# 扩展签名私钥：锁定稳定扩展 ID 用，绝不能入库（见 README「私钥与稳定 ID」）
+native/extension_key.pem
+__pycache__/

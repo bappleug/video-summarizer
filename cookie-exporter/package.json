@@ -1,0 +1,10 @@
+{
+  "name": "cookie-exporter",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome MV3 扩展：检测小红书/B站登录态，导出 Cookie（剪贴板/下载/直写 keys.env）。零 npm 依赖；node --test + python3 unittest 双端测试。",
+  "scripts": {
+    "test": "node --test && python3 -m unittest discover -s tests -p 'test_host.py' -v"
+  }
+}

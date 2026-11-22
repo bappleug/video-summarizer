@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Cookie 导出助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="app-head">
+    <h1>Cookie 导出助手</h1>
+    <p class="sub">一键把小红书 / B站 Cookie 写入 keys.env</p>
+  </header>
+
+  <main id="cards" class="cards"><!-- 站点卡片由 js/main.js 按 js/sites.js 配置生成 --></main>
+
+  <footer class="app-foot">
+    本插件未申请任何网络权限：Cookie 只在本机直写 keys.env，不发送、不留存，关闭弹窗即弃。
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

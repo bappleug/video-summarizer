@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Cookie 导出助手",
+  "version": "1.2.0",
+  "description": "检测小红书/B站登录态，一键把 Cookie 直写 keys.env。无网络权限，Cookie 不出本机。",
+  "action": {
+    "default_title": "Cookie 导出助手",
+    "default_popup": "popup.html"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt2voV8fYgwLmjmsb3c5LwGxqvesC+0RZ4E9BqJhps86IOckk+O91uVR1tk6bU/n1sLSKSXz6eSjy+NwQY1mTIaBvHhiLArwsD/gcVOG2rnY1rrjbMbLCR5fCnFh4Fe3euKlqRNF6+Os7dC71cFa1M7yXGYzpFNTIhEcq1LYM0NaMBxQFP6AB0D7KN1M9+wQk3QK5MYHFtcM0CIP6/IvDgp0tXHfeSvSG58R1DcZVKZTXIP4Oa7HUSVKhpUTTgg6WUQeyGkjIxVXCmE4m3SYZpXL05kBnxGmmnCr7ZZ+tNg388zSnCYTB3A2g7kj1eq8U/xOYfe4/kcune4l/NLi19wIDAQAB",
+  "permissions": [
+    "cookies",
+    "nativeMessaging",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.xiaohongshu.com/*",
+    "*://*.bilibili.com/*"
+  ]
+}

@@ -6,6 +6,26 @@ B站 / 小红书视频转写与总结工具：一条命令把视频变成文字�
 - 一把 key 全搞定：默认走硅基流动（免费注册），读图 / 总结 / 云转写共用一个 key
 - 面向 Agent：内置 8 个 MCP 工具，AI 客户端接入后对它说「开始用 bili-digest」即可被引导完成配置
 
+## 安装 cookie 导出插件（可选，用小红书时需要）
+
+小红书取材需要登录态 Cookie。仓库内置了配套的 Chrome 插件 **cookie-exporter**，
+装好后可一键把当前浏览器的 Cookie 直写到 `~/.config/ai-tools/bili-digest/keys.env`：
+
+1. **获取仓库**：`git clone https://github.com/bappleug/video-summarizer`（或 GitHub 页面
+   下载 zip 解压）；
+2. **加载扩展**：Chrome 打开 `chrome://extensions` → 右上角开「开发者模式」→
+   「加载已解压的扩展程序」→ 选中仓库内的 `cookie-exporter/` 目录；
+3. **一键导出**：在登录了小红书的 Chrome 里点插件图标 → 「导出到 keys.env」。
+
+**本机助手（直写依赖，一次性）**：首次使用前跑
+`bash cookie-exporter/native/install-host.sh` 并**完全退出 Chrome（Cmd+Q）后重开**；
+卸载用 `uninstall-host.sh`。
+
+**安全性**：插件不发任何网络请求——manifest 仅声明 `cookies` 读取 +
+`nativeMessaging`（连本机助手）+ `storage`（记住偏好），`host_permissions` 只覆盖
+小红书 / B站两个域；只导出白名单字段（小红书 `a1/web_session` 等），host 助手
+固定写 0600 的 keys.env，不上传、不打印。
+
 ## 三步上手
 
 ### ① 安装 uv（Python 包运行器，无需手动管 Python 环境）

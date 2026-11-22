@@ -1,0 +1,124 @@
+/* popup.css — 弹窗样式（无框架，系统字体） */
+
+:root {
+  --ok-bg: #e6f6ea; --ok-fg: #1a7f37;
+  --off-bg: #f1f2f4; --off-fg: #6b7280;
+  --err-bg: #fdeceb; --err-fg: #c0392b;
+  --line: #e5e7eb;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 360px;
+  margin: 0;
+  padding: 14px 14px 10px;
+  font: 14px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #1f2328;
+  background: #fff;
+}
+
+.app-head h1 { margin: 0; font-size: 16px; }
+.app-head .sub { margin: 2px 0 0; font-size: 12px; color: #6b7280; }
+
+.cards { margin-top: 12px; display: grid; gap: 10px; }
+
+.card {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-label { font-size: 15px; font-weight: 600; }
+
+.badge {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.off { background: var(--off-bg); color: var(--off-fg); }
+.badge.err { background: var(--err-bg); color: var(--err-fg); }
+
+.info {
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.info:hover { background: #f0f3f6; }
+
+/* ⓘ 展开的 keys.env 路径（可选中复制） */
+.path {
+  display: block;
+  margin-top: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #eef1f4;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+  user-select: text;
+  cursor: text;
+}
+
+.actions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.export {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 14px;
+  border: 1px solid #c9ced6;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.export:hover:not(:disabled) { background: #f0f3f6; }
+.export:disabled { color: #9aa1ab; cursor: default; }
+
+.last-used { font-size: 12px; color: #6b7280; }
+
+/* 状态行：成功=可复制的路径；失败=文案+可复制的命令 */
+.status {
+  margin: 6px 0 0;
+  font-size: 12px;
+  user-select: text;
+  cursor: text;
+  word-break: break-all;
+}
+.status.ok { color: var(--ok-fg); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.status.warn { color: #9a6700; }
+.status.err { color: var(--err-fg); }
+
+.status-cmd {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.app-foot {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: #6b7280;
+}
