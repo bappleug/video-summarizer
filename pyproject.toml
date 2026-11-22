@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bili-digest"
+version = "1.0.0"
+description = "B站 / 小红书视频转写与总结 CLI：字幕优先（含污染校验降级），无字幕回退 ASR（本地 mlx / 云端 SenseVoice），可选 LLM 报告与画面增强，内置 MCP server"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "bappleug" }]
+requires-python = ">=3.11"
+keywords = ["bilibili", "xiaohongshu", "transcript", "asr", "summarization", "mcp"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+]
+
+[project.urls]
+Repository = "https://github.com/bappleug/video-summarizer"
+Issues = "https://github.com/bappleug/video-summarizer/issues"
+
+[project.optional-dependencies]
+mlx = ["mlx-whisper>=0.4.3"]
+mcp = ["mcp>=1.2"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+digest = "bili_digest.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"bili_digest.summarize" = ["templates/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
