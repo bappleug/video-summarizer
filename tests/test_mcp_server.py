@@ -18,7 +18,7 @@ from bili_digest.errors import CliError
 from bili_digest.transcribe.base import Segment, Transcript
 
 TOOL_NAMES = {"digest_video", "job_status", "get_transcript", "get_report", "get_assets",
-               "get_frame", "cancel", "digest_doctor"}
+               "get_frame", "cancel", "digest_doctor", "get_manual"}
 
 
 def fake_result(text="第一句", bvid="BV1test"):
@@ -284,7 +284,7 @@ def test_json_safe_nan():
 
 def test_tool_schemas_frozen():
     names = [t["name"] for t in mcp_server.TOOLS]
-    assert set(names) == TOOL_NAMES and len(names) == 8  # S7.1：+digest_doctor
+    assert set(names) == TOOL_NAMES and len(names) == 9  # S7.6：+get_manual（手册按需取用）
     by_name = {t["name"]: t for t in mcp_server.TOOLS}
     assert by_name["digest_video"]["inputSchema"]["required"] == ["url"]
     for name in ("job_status", "get_transcript", "get_report", "get_assets", "cancel"):
@@ -293,21 +293,25 @@ def test_tool_schemas_frozen():
     assert by_name["digest_doctor"]["inputSchema"]["required"] == []
     assert "首次使用" in by_name["digest_doctor"]["description"] and "¥0.001" in \
         by_name["digest_doctor"]["description"]
-    # S7.3：digest_video 描述精简（默认层场景语言，细节引导到开发层）
+    # S7.6：digest_video 描述场景句 + type 一行 + 指路 get_manual
     dv_desc = by_name["digest_video"]["description"]
-    assert "summarize=true" in dv_desc and "快速看懂" in dv_desc
-    assert "开发层" in dv_desc and "¥" not in dv_desc  # 默认层不给费用数字，只指路开发层
+    assert "summarize=true" in dv_desc and "type=slides" in dv_desc
+    assert "get_manual" in dv_desc and "¥" not in dv_desc
+    # S7.6：INSTRUCTIONS 常驻瘦身（≤800 字符，不含参数表/费用关键词）
     ins = mcp_server.INSTRUCTIONS
-    # B：沟通原则 + 触发词 + 三剧本 + 压缩首跑/排障
-    assert "只讲场景与推荐操作，不罗列参数表/工具清单/内部机制/费用明细，除非用户追问" in ins
-    assert "显示完整技术手册" in ins and "明确自称开发者" in ins
-    assert "想快速看懂一个视频" in ins and "要文字稿" in ins and "素材二次创作（做 PPT 等）" in ins
-    assert "这是 PPT / 没有语音 / 说话和画面都要" in ins
-    assert "首次使用" in ins and "keys.env，不经对话传递" in ins
-    assert "排障" in ins
-    # 开发层保留两种姿势/费用细节
-    assert "费用走用户 key" in ins and "费用走宿主" in ins
-    assert "Qwen/Qwen3-VL-8B-Instruct" in ins and "deepseek-ai/DeepSeek-V4.1-Flash" in ins
+    assert len(ins) <= 800
+    for banned in ("engine", "output_dir", "门控", "¥", "显示完整技术手册", "费用走宿主"):
+        assert banned not in ins, f"常驻 INSTRUCTIONS 不应含 {banned!r}"
+    assert "只讲场景与推荐操作，不罗列参数表/工具清单/内部机制/费用明细" in ins
+    assert "get_report" in ins and "get_transcript" in ins and "get_assets/get_frame" in ins
+    assert "调 get_manual 获取后转述" in ins
+    # get_manual：手册常量含修正后费用与 9 工具
+    manual = mcp_server.MANUAL
+    assert "¥0.003" in manual and "¥0.005" in manual and "云转写（SenseVoice）：¥0" in manual
+    assert manual.count("get_manual") >= 1 and "9 个" in manual
+    gm = by_name["get_manual"]
+    assert gm["inputSchema"]["required"] == []
+    assert "仅在用户明确要技术细节" in gm["description"]
 
 
 # ---------------------------------------------------------------- 协议全链路（验收 #1 #3）
@@ -667,7 +671,9 @@ def test_doctor_payload_structured(monkeypatch):
         ("读图能力", "智谱 key", "ok", "实测通过（glm-5.3-flash）", "无需处理"),
         ("基础依赖", "ffmpeg", "fail", "未安装", "brew install ffmpeg"),
         ("小红书 Cookie", "XHS_COOKIE", "warn", "未配置（匿名可用）",
-         "用浏览器插件（如 EditThisCookie）导出…写入 keys.env 的 XHS_COOKIE="),
+         "安装仓库内置的 cookie 导出插件：git clone https://github.com/bappleug/video-summarizer"
+         " → Chrome 开发者模式加载已解压 → 选 cookie-exporter/ 目录 → 一键「导出到 keys.env」"
+         "（首次需跑 cookie-exporter/native/install-host.sh 并重启 Chrome）"),
     ])
     payload = mcp_server.doctor_payload()
     caps = [c["capability"] for c in payload["checks"]]
@@ -675,7 +681,8 @@ def test_doctor_payload_structured(monkeypatch):
     first = payload["checks"][0]
     assert first["name"] == "智谱 key" and first["state"] == "ok"  # 旧字段向后兼容
     xhs = payload["checks"][2]
-    assert xhs["state"] == "warn" and "EditThisCookie" in xhs["action"]
+    assert xhs["state"] == "warn"
+    assert "video-summarizer" in xhs["action"] and "install-host.sh" in xhs["action"]
     assert payload["summary"]["exit_code"] == 1 and payload["summary"]["fails"] == 1
     assert payload["summary"]["warns"] == 1
 
@@ -731,7 +738,7 @@ class TestStdioDoctorChain:
             send({"jsonrpc": "2.0", "method": "notifications/initialized"})
             send({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
             tools = read_response(2)["result"]["tools"]
-            assert len(tools) == 8
+            assert len(tools) == 9
             send({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                   "params": {"name": "digest_doctor", "arguments": {}}})
             result = read_response(3)["result"]
@@ -776,10 +783,10 @@ def test_partial_success_report_error(monkeypatch, tmp_path):
         manager.report_text(jid)
     msg = str(exc_info.value)
     assert "①" in msg and "②" in msg and "自行总结" in msg  # 两条出路
-    # INSTRUCTIONS 宿主接管规则
+    # INSTRUCTIONS 出错接管规则（S7.6 瘦身版措辞）
     ins = mcp_server.INSTRUCTIONS
-    assert "report_error/visual_error" in ins and "切换姿势 B" in ins
-    assert "不要尝试替用户充值或反复重试" in ins
+    assert "report_error/visual_error" in ins and "自行完成总结/读图" in ins
+    assert "不要替用户充值或反复重试" in ins
 
 
 def test_output_dir_param_and_artifacts_summary(monkeypatch, tmp_path):
@@ -813,5 +820,15 @@ def test_output_dir_param_and_artifacts_summary(monkeypatch, tmp_path):
     assert arts["report"]["status"] == "not_requested"
     assert "get_assets(job_id)" in arts["assets"]["hint"]
     assert "仅供人工备查" in status["run_dir_note"]
-    assert "产物内容一律通过 get_transcript/get_assets/get_report 获取" in mcp_server.INSTRUCTIONS
+    assert "产物内容一律用 get_transcript/get_assets/get_report 取，不读文件路径" \
+        in mcp_server.INSTRUCTIONS
     assert (abs_dir / "assets.json").exists()  # 产物落在指定目录
+
+
+def test_get_manual_dispatch():
+    """S7.6：get_manual 无参数返回手册全文（费用口径修正后）。"""
+    manager = mcp_server.JobManager()
+    manual = mcp_server.tool_call(manager, "get_manual", {})
+    assert manual is mcp_server.MANUAL
+    assert "¥0.003/条" in manual and "¥0.005/篇" in manual
+    assert "¥0.05" not in manual  # 旧口径清除

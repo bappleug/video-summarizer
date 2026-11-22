@@ -186,7 +186,7 @@ def build_parser():
                         "静态页优先、动态段每 30s 一代表，帧数上限按时长伸缩至 60）+ VLM 读图"
                         "+ 富化时间轴/报告；--visual 或 --visual=auto = 自动混合（含画面价值"
                         "门控，口播类自动降级不读图）；--visual=ppt = PPT/讲义模式（跳过门控）。"
-                        "读图智谱 glm-5.3-flash，约 ¥0.05/条。与 --type 互斥（推荐 --type）")
+                        "读图硅基流动 Qwen3-VL-8B，约 ¥0.003/条。与 --type 互斥（推荐 --type）")
     p.add_argument("--type", choices=("talk", "slides", "mixed", "auto"), default=None,
                    help="内容形态（用户词汇，推荐用它替代 --visual）：talk=内容在说话"
                         "（访谈/口播/旁白：纯音频不下载视频）；slides=内容在画面"

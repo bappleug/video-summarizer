@@ -33,32 +33,52 @@ MAX_JOBS = 200  # 长驻进程的内存上限：超出先清最旧的已终态 j
 
 INSTRUCTIONS = (
     "bili-digest：帮用户看懂 B站/小红书视频（字幕/语音转文字，可配画面理解与总结）。\n"
-    "【沟通原则（默认层，非开发者）】回答使用问题时只讲场景与推荐操作，"
+    "【沟通原则】回答使用问题时只讲场景与推荐操作，"
     "不罗列参数表/工具清单/内部机制/费用明细，除非用户追问。\n"
-    "【常用剧本】\n"
-    "① 想快速看懂一个视频 → digest_video(url, summarize=true) → 轮询 job_status 到 done → "
-    "get_report 取报告讲给用户；\n"
-    "② 要文字稿 → digest_video(url, summarize=false) → get_transcript；\n"
-    "③ 要素材二次创作（做 PPT 等）→ digest_video(url, summarize=false) → get_assets 看素材清单、"
-    "get_frame 取帧图 → 宿主自行加工。\n"
-    "用户主动说「这是 PPT / 没有语音 / 说话和画面都要」时才传 type（slides/talk/mixed），"
-    "其余情况不传。\n"
-    "【首次使用】先调 digest_doctor 体检；有红项按其指引带用户配置"
-    "（key 填 ~/.config/ai-tools/bili-digest/keys.env，不经对话传递），复检通过再执行任务。\n"
-    "【排障】任务失败/结果异常时才提 digest_doctor 复查环境，不要主动刷存在感。\n"
-    "若任务返回 report_error/visual_error，直接切换姿势 B：get_transcript"
-    "（/get_assets/get_frame）由你自行完成总结/读图，并向用户说明工具侧该步骤不可用及原因；"
-    "不要尝试替用户充值或反复重试。\n"
-    "产物内容一律通过 get_transcript/get_assets/get_report 获取，无需读文件路径"
-    "（响应里的路径仅供人工备查）。\n"
-    "【开发层（触发词解锁）】仅当用户说「显示完整技术手册」或明确自称开发者时输出本层："
-    "参数速查（type talk|slides|mixed|auto 与 visual 互斥；engine auto|mlx|cloud；page 分P；"
-    "format txt|srt|md|json；summarize 布尔）、工具全表（digest_video / job_status / get_transcript / "
-    "get_report / get_assets / get_frame / cancel / digest_doctor 共 8 个）、"
-    "两种姿势（summarize=true 工具出报告费用走用户 key；false+get_assets 系素材进宿主上下文费用走宿主）、"
-    "费用与模型细节（默认 siliconflow 一把 key：读图 Qwen/Qwen3-VL-8B-Instruct、"
-    "总结 deepseek-ai/DeepSeek-V4.1-Flash；SUMMARIZE_PROVIDER/VISION_PROVIDER/VISION_MODEL 可覆盖）、"
-    "内部机制（字幕优先污染校验降级 ASR；敏感边界检测取帧+聚簇；口播门控仅 auto 生效）。"
+    "【剧本】① 想快速看懂视频 → digest_video(url, summarize=true) → 轮询 job_status 到 done → "
+    "get_report；② 要文字稿 → summarize=false → get_transcript；"
+    "③ 要素材二次创作（做 PPT 等）→ summarize=false → get_assets/get_frame 自行加工。\n"
+    "用户主动说是 PPT / 没有语音 / 说话画面都要时才传 type，其余不传。\n"
+    "【首次使用】先调 digest_doctor 体检，红项按指引带用户配置后复检。\n"
+    "【出错接管】任务返回 report_error/visual_error 时直接切姿势②/③自行完成总结/读图，"
+    "向用户说明该步骤不可用及原因；不要替用户充值或反复重试。\n"
+    "key 一律填 ~/.config/ai-tools/bili-digest/keys.env，不经对话传递；"
+    "产物内容一律用 get_transcript/get_assets/get_report 取，不读文件路径。\n"
+    "用户要完整技术细节/参数/手册时，调 get_manual 获取后转述。"
+)
+
+# 完整技术手册（get_manual 按需返回；费用口径 2026-11-22 硅基流动实测标称）：
+# 视觉 ≈¥0.003/条（Qwen3-VL-8B 读图）、总结 ≈¥0.005/篇（DeepSeek-V4.1-Flash）、云转写 ¥0。
+MANUAL = (
+    "# bili-digest 技术手册（get_manual 按需提供；宿主只在用户要技术细节时转述）\n\n"
+    "## 参数速查（digest_video）\n"
+    "- url（必填）：B站链接/BV号/av号，或小红书分享链接（?p=N 自动识别分P）\n"
+    "- type：talk=纯音频｜slides=画面为主（ppt 取帧+跳 ASR）｜mixed=双通道禁门控｜"
+    "auto=默认；与 visual 互斥\n"
+    "- visual：false/auto/ppt 三态（type 的底层等价物，推荐用 type）\n"
+    "- summarize：true=工具出 LLM 报告；false=素材进宿主上下文\n"
+    "- engine：auto|mlx|cloud（本地 mlx 优先，云端 SenseVoice 免费兜底）\n"
+    "- page：分P 序号；format：txt|srt|md|json（get_transcript 产物格式）\n"
+    "- output_dir：产物目录（绝对或相对 runs 根，目录自建）\n\n"
+    "## 工具清单（9 个）\n"
+    "digest_video（提交任务）→ job_status（轮询，done 带 artifacts 摘要）→ "
+    "get_transcript / get_report / get_assets（素材清单）/ get_frame（帧图 base64，多模态复用）；"
+    "cancel（协作取消）；digest_doctor（体检+配置指引）；get_manual（本手册）\n\n"
+    "## 两种姿势（按宿主积分余量选）\n"
+    "A. summarize=true：工具出报告（返回内容少，费用走用户 key）；"
+    "B. summarize=false + get_assets/get_transcript/get_frame：素材进宿主上下文自行加工"
+    "（费用走宿主）。\n\n"
+    "## 费用与模型（默认 siliconflow 一把 key）\n"
+    "- 视觉（读图）：Qwen/Qwen3-VL-8B-Instruct，≈¥0.003/条视频\n"
+    "- 总结：deepseek-ai/DeepSeek-V4.1-Flash，≈¥0.005/篇\n"
+    "- 云转写（SenseVoice）：¥0（免费档）；本地 mlx：¥0\n"
+    "- 可选备用：智谱（glm-5.3-flash）/DeepSeek 官方，手动切换用 "
+    "SUMMARIZE_PROVIDER / VISION_PROVIDER / VISION_MODEL（keys.env 或环境变量），不自动兜底\n\n"
+    "## 内部机制\n"
+    "字幕优先（污染校验四规则，不过则降级 ASR）；视觉走敏感边界检测取帧"
+    "（pHash 聚簇取每页最全状态 + 静态簇优先抽稀）；auto 模式带口播门控"
+    "（低多样性/口播型自动降级不读图；type=slides/mixed 跳过）；"
+    "供应商内网络错误退避重试一次，跨供应商失败落 report_error 由宿主接管。"
 )
 
 
@@ -422,7 +442,7 @@ class JobManager:
 def doctor_payload() -> dict:
     """doctor 体检 → 结构化结果（S7.2 能力分组：capability + name/state/detail/action，
     旧字段全保留，向后兼容）。指引文案含 key 注册入口 URL、keys.env 路径、
-    XHS_COOKIE 浏览器插件导出方法。
+    XHS_COOKIE 用仓库内置 cookie-exporter 插件一键导出的方法。
     注意：check_key 对已配置 key 做真实 ping（约 ¥0.001/项）——首次使用/疑似凭据问题时调用。"""
     rows = doctor.run()  # [(capability, item, state, detail, action)]，XHS 行已含在内
     checks = [{"capability": cap, "name": n, "state": s, "detail": d, "action": a}
@@ -463,9 +483,11 @@ def tool_call(manager: JobManager, name, arguments) -> dict | str:
         return manager.cancel(_job_id(args))
     if name == "digest_doctor":
         return doctor_payload()
+    if name == "get_manual":
+        return MANUAL
     raise ToolInputError(
         f"未知工具: {name}（可用: digest_video|job_status|get_transcript|get_report|"
-        "get_assets|get_frame|cancel|digest_doctor）")
+        "get_assets|get_frame|cancel|digest_doctor|get_manual）")
 
 
 # ---------------------------------------------------------------- 工具 schema（冻结命名）
@@ -476,8 +498,8 @@ TOOLS: list[dict] = [
         "description": "提交 B站/小红书视频任务（后台执行，立即返回 job_id）。"
                        "要总结报告传 summarize=true（完成后 get_report 取）；"
                        "要文字稿或素材传 false（get_transcript / get_assets+get_frame 取）。"
-                       "想快速看懂视频选前者；要自己加工选后者。"
-                       "参数与费用细节见 INSTRUCTIONS 开发层（触发词解锁）。",
+                       "用户说是 PPT/无语音/画面为主时传 type=slides，双通道传 mixed。"
+                       "完整参数见 get_manual。",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -489,7 +511,7 @@ TOOLS: list[dict] = [
                            "description": "视觉增强（false=纯音频不下载视频；\"auto\"=自动混合，"
                                           "含画面价值门控（口播类自动降级不读图）；\"ppt\"=PPT/讲义模式，"
                                           "跳过门控）：关键帧提取 + VLM 读图"
-                                          "（智谱 glm-5.3-flash，约 ¥0.05/条），产物落 run 目录"
+                                          "（≈¥0.003/条），产物落 run 目录"
                                           "（frames/ + 富化时间轴 + 素材包）。与 type 互斥"},
                 "type": {"type": "string", "enum": list(TYPES), "default": "auto",
                          "description": "内容形态（用户词汇，推荐用它替代 visual；互斥）："
@@ -575,12 +597,20 @@ TOOLS: list[dict] = [
         },
     },
     {
+        "name": "get_manual",
+        "description": "取完整技术手册（参数全表/type 与 visual 语义/9 工具清单/两种姿势/"
+                       "内部机制/费用明细）。仅在用户明确要技术细节、参数或手册时调用并转述；"
+                       "日常使用按 INSTRUCTIONS 场景剧本即可，不需要本手册。",
+        "inputSchema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
         "name": "digest_doctor",
         "description": "体检：环境与凭据是否就绪（首次使用/疑似凭据问题时调用；"
                        "对已配置 key 做真实 ping，约 ¥0.001/项）。返回各能力（读图/总结/云转写/"
                        "B站/小红书等）的状态与「下一步动作」——照着指引用户配置即可"
                        "（默认只需注册硅基流动一把 key：https://cloud.siliconflow.cn → API 密钥，"
-                       "填 ~/.config/ai-tools/bili-digest/keys.env；小红书 Cookie 用浏览器插件导出。"
+                       "填 ~/.config/ai-tools/bili-digest/keys.env；小红书 Cookie 装仓库内置 "
+                       "cookie-exporter 插件一键导出（github.com/bappleug/video-summarizer）。"
                        "key 不经对话传递）。复检通过再执行任务。",
         "inputSchema": {"type": "object", "properties": {}, "required": []},
     },

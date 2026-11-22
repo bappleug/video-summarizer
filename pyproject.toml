@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bili-digest"
-version = "1.1.0"
+version = "1.2.0"
 description = "B站 / 小红书视频转写与总结 CLI：字幕优先（含污染校验降级），无字幕回退 ASR（本地 mlx / 云端 SenseVoice），可选 LLM 报告与画面增强，内置 MCP server"
 readme = "README.md"
 license = { text = "MIT" }

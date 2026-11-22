@@ -5,7 +5,7 @@ S6.1 增画面价值门控探测 probe_content_type：单次调用带 ≤3 帧�
 
 模型名与价格查证（2026-11-21，docs.bigmodel.cn 官方模型/价格页 + 真实 API 实测）：
 - glm-5.3-flash：原生多模态（图像输入实测 200 通过），¥0.8/M 入 + ¥2.8/M 出——
-  **默认模型**（与 summarize 同源同 key，20 帧约 ¥0.05/条视频）；
+  （S7.3 起默认供应商 siliconflow/Qwen3-VL-8B，约 ¥0.003/条视频；本段为历史查证记录）；
 - glm-4.6v-flash / glm-4.1v-thinking-flash：官方标免费，但实测本项目的
   GLM Coding Plan key 请求被拒（HTTP 429 + code 1309「套餐已到期」）——免费档
   挂在套餐额度体系下，Coding Plan key 不可用；可用环境变量 BILI_DIGEST_VLM_MODEL

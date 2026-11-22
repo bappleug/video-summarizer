@@ -172,8 +172,7 @@ def check_xhs_cookie():
                 "无需处理")
     return ("小红书 Cookie", "XHS_COOKIE", WARN,
             "未配置（匿名可用；笔记 300031 多为 xsec_token/cookie 过期）",
-            "用浏览器插件（如 EditThisCookie）导出小红书站点 Cookie 整行，写入 "
-            "~/.config/ai-tools/bili-digest/keys.env 的 XHS_COOKIE=（不经对话传递）")
+            "安装仓库内置的 cookie 导出插件：git clone https://github.com/bappleug/video-summarizer → Chrome 开发者模式加载已解压 → 选 cookie-exporter/ 目录 → 插件里一键「导出到 keys.env」（首次需跑 cookie-exporter/native/install-host.sh 并重启 Chrome）")
 
 
 def _vision_model_label():
