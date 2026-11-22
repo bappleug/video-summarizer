@@ -63,7 +63,10 @@ def test_describe_frame_payload_structure(two_frames, monkeypatch):
     assert "thinking" not in payload  # thinking 关闭仅 zhipu 端点附加
     content = payload["messages"][0]["content"]
     assert content[0]["type"] == "image_url"
-    assert base64.b64decode(content[0]["image_url"]["url"]) == JPEG  # 原始 base64，无 data URI 前缀
+    # siliconflow（OpenAI 兼容）要求 data URI 前缀；zhipu 才用裸 base64。
+    url = content[0]["image_url"]["url"]
+    assert url.startswith("data:image/jpeg;base64,")
+    assert base64.b64decode(url.split(",", 1)[1]) == JPEG
     assert content[1]["type"] == "text" and "T" in content[1]["text"]
 
 

@@ -99,6 +99,19 @@ def cookie_header(cookies):
     return "; ".join(f"{k}={v}" for k, v in cookies.items() if k in COOKIE_KEYS and v)
 
 
+def cookie_from_keys():
+    """从 keys.env / 环境变量读插件导出的 BILI_COOKIE（原始 Cookie 字符串）。
+
+    作为扫码凭据（credentials.json）不存在时的回退：无 refresh_token，Cookie 过期需
+    重新用 Chrome 插件导出。返回 None 表示未配置。
+    """
+    from .. import config  # 延迟 import，避免 config → platforms 潜在循环
+    raw = config.get_key("BILI_COOKIE")
+    if not raw or not raw.strip():
+        return None
+    return raw.strip()
+
+
 # ---------------------------------------------------------------- 凭据
 
 def load_cred():

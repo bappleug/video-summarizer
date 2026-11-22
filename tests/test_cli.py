@@ -203,7 +203,7 @@ def test_type_routes(monkeypatch, tmp_path):
     (run_dir / "frames").mkdir(parents=True)
 
     def fake_run(target, page=None, engine="auto", lang="zh", visual=None,
-                 work_dir=None, skip_asr=False, no_gate=False):
+                 work_dir=None, skip_asr=False, no_gate=False, **kw):
         captured.append({"visual": visual, "skip_asr": skip_asr, "no_gate": no_gate})
         return _fake_result(tr, {"bvid": "BV1t", "title": "T", "duration": 5, "frames": []},
                             run_dir if visual else None)

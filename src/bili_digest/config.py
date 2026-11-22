@@ -96,3 +96,25 @@ def runs_dir(start=None) -> Path:
     log(f"未找到仓库根（AGENTS.md / .git），runs 目录回退 {fallback}；"
         "可用环境变量 BILI_DIGEST_RUNS_DIR 指定")
     return fallback
+
+
+# ---------------------------------------------------------------- 视频缓存目录
+# 视频轨缓存放在 Agent 当前工作目录下（<cwd>/.bili-digest-cache/videos/），
+# 让用户按工作项自行清理视频/转录产物；MCP server 的 cwd 即 WorkBuddy 工作目录。
+# 优先级：显式 work_dir 参数 > 环境变量 BILI_DIGEST_CACHE_DIR > cwd/.bili-digest-cache。
+# 缓存键由 video.py 按 平台+视频ID+流ID 生成，命中则跳过下载。
+
+CACHE_DIRNAME = ".bili-digest-cache"  # 工作目录下的缓存文件夹名（用户可见，便于手动清理）
+
+
+def videos_cache_dir(work_dir=None) -> Path:
+    """视频轨缓存根目录：默认 <Agent工作目录>/.bili-digest-cache/videos。
+
+    work_dir 显式指定时优先（MCP 的 work_dir / CLI 产物目录）；
+    环境变量 BILI_DIGEST_CACHE_DIR 为逃生口；最后回退当前 cwd。
+    """
+    env = os.environ.get("BILI_DIGEST_CACHE_DIR")
+    if env:
+        return Path(env).expanduser()
+    base = Path(work_dir).expanduser() if work_dir else Path.cwd()
+    return base / CACHE_DIRNAME / "videos"

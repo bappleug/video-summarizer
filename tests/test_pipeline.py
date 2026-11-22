@@ -204,7 +204,7 @@ def xhs_env(monkeypatch, tmp_path, video):
             "video_urls": ["https://xhs/video.mp4"], "subtitles": []}
     downloads = {"n": 0}
 
-    def fake_fetch_xhs(note_id, urls, work_dir):
+    def fake_fetch_xhs(note_id, urls, work_dir, **kw):
         downloads["n"] += 1
         Path(work_dir).mkdir(parents=True, exist_ok=True)
         out = Path(work_dir) / f"xhs_{note_id}.mp4"
@@ -267,7 +267,7 @@ def test_run_xiaohongshu_visual_download_failure_degrades(monkeypatch, tmp_path)
     monkeypatch.setattr(pipeline.xiaohongshu, "acquire_note",
                         lambda target: ("note1", "https://xhs/note1", info, "cookie"))
 
-    def boom(note_id, urls, work_dir):
+    def boom(note_id, urls, work_dir, **kw):
         raise CliError("视频流下载失败（HTTP 403）", 4)
 
     monkeypatch.setattr(enrich.video, "fetch_xhs_video", boom)
@@ -312,7 +312,7 @@ def test_run_bilibili_visual_after_subtitle(monkeypatch, tmp_path):
     fake_describe(monkeypatch)
     monkeypatch.setattr(pipeline.validate, "validate", lambda *a, **kw: [])  # 本测试不关心污染校验
 
-    def fake_fetch_bili(bvid, cid, work_dir, cookie=None, info=None):
+    def fake_fetch_bili(bvid, cid, work_dir, cookie=None, info=None, **kw):
         Path(work_dir).mkdir(parents=True, exist_ok=True)
         out = Path(work_dir) / f"{bvid}_{cid}.mp4"
         out.write_bytes(video.read_bytes())
@@ -537,7 +537,7 @@ def test_run_bilibili_slides_skips_asr(monkeypatch, tmp_path):
                            "desc": "d", "has_text": True, "type": "diagram"}]
     monkeypatch.setattr(pipeline, "read_frames", fake_read_frames)
 
-    def fake_fetch(bvid, cid, work_dir, cookie=None, info=None):
+    def fake_fetch(bvid, cid, work_dir, cookie=None, info=None, **kw):
         Path(work_dir).mkdir(parents=True, exist_ok=True)
         out = Path(work_dir) / f"{bvid}_{cid}.mp4"
         out.write_bytes(video.read_bytes())

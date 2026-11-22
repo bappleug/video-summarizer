@@ -59,7 +59,10 @@ MANUAL = (
     "- summarize：true=工具出 LLM 报告；false=素材进宿主上下文\n"
     "- engine：auto|mlx|cloud（本地 mlx 优先，云端 SenseVoice 免费兜底）\n"
     "- page：分P 序号；format：txt|srt|md|json（get_transcript 产物格式）\n"
-    "- output_dir：产物目录（绝对或相对 runs 根，目录自建）\n\n"
+    "- output_dir：产物目录（绝对或相对 runs 根，目录自建）\n"
+    "- reuse_cache：true（默认）=同一视频二次运行复用缓存、跳过下载；"
+    "false=强制重下并刷新缓存。缓存在 Agent 工作目录/.bili-digest-cache/videos/，"
+    "删整个 .bili-digest-cache 即可手动清理\n\n"
     "## 工具清单（9 个）\n"
     "digest_video（提交任务）→ job_status（轮询，done 带 artifacts 摘要）→ "
     "get_transcript / get_report / get_assets（素材清单）/ get_frame（帧图 base64，多模态复用）；"
@@ -165,8 +168,13 @@ def validate_digest_args(args: dict) -> dict:
         except OSError as exc:
             raise ToolInputError(f"output_dir 无法创建（{exc}）: {output_dir}") from None
         work_dir = str(path)
+    reuse_cache = args.get("reuse_cache", True)
+    if not isinstance(reuse_cache, bool):
+        raise ToolInputError(f"reuse_cache 需为布尔值，收到: {reuse_cache!r}")
+
     return {"url": url, "summarize": summarize, "engine": engine, "page": page,
-            "fmt": fmt, "visual": visual, "vtype": vtype, "work_dir": work_dir}
+            "fmt": fmt, "visual": visual, "vtype": vtype, "work_dir": work_dir,
+            "reuse_cache": reuse_cache}
 
 
 def _job_id(args: dict) -> str:
@@ -191,7 +199,7 @@ class Job:
     """单个后台任务的可观测状态（读写都在 JobManager 锁内）。"""
 
     def __init__(self, url, summarize, engine, page, fmt, visual=False, vtype="auto",
-                 work_dir=None):
+                 work_dir=None, reuse_cache=True):
         self.job_id = uuid.uuid4().hex[:8]
         self.url = url
         self.summarize = summarize
@@ -201,6 +209,7 @@ class Job:
         self.visual = visual
         self.vtype = vtype  # S7 --type 用户词汇（auto 时 visual 生效）
         self.work_dir = work_dir  # S7.4 output_dir（绝对/相对 runs 根；目录自建）
+        self.reuse_cache = reuse_cache  # 视频轨缓存复用（默认 True，reuse_cache=false 强制重下）
         self.status = "queued"  # queued|running|done|error|cancelled
         self.progress = "排队中"
         self.error = None
@@ -222,8 +231,8 @@ class JobManager:
     # ---- 提交与查询
 
     def submit(self, url, summarize=False, engine="auto", page=None, fmt="txt",
-               visual=False, vtype="auto", work_dir=None) -> dict:
-        job = Job(url, summarize, engine, page, fmt, visual, vtype, work_dir)
+               visual=False, vtype="auto", work_dir=None, reuse_cache=True) -> dict:
+        job = Job(url, summarize, engine, page, fmt, visual, vtype, work_dir, reuse_cache)
         with self._lock:
             if len(self._jobs) >= MAX_JOBS:
                 self._prune_locked()
@@ -361,7 +370,7 @@ class JobManager:
                 job.status, job.progress = "running", "获取 transcript（字幕优先，无字幕回退 ASR）"
             result = pipeline.run(job.url, page=job.page, engine=job.engine, visual=visual,
                                   skip_asr=profile["skip_asr"], no_gate=profile["no_gate"],
-                                  work_dir=job.work_dir)
+                                  work_dir=job.work_dir, reuse_cache=job.reuse_cache)
             job.transcript, job.meta = result.transcript, result.meta
             if result.run_dir is not None:
                 job.run_dir = result.run_dir  # --visual 的产物目录（frames/ 已落盘）
@@ -527,6 +536,10 @@ TOOLS: list[dict] = [
                 "output_dir": {"type": "string",
                                "description": "产物目录（可选；绝对路径或相对 runs 根的路径，"
                                               "目录自动创建；缺省按视频 ID 自动命名）"},
+                "reuse_cache": {"type": "boolean", "default": True,
+                                "description": "复用视频轨缓存（默认 true）：同一视频二次运行"
+                                               "跳过下载。缓存在 Agent 工作目录/.bili-digest-cache/videos/，"
+                                               "可自行删除整个 .bili-digest-cache 清理。传 false 强制重下"},
             },
             "required": ["url"],
         },

@@ -241,14 +241,14 @@ def test_bad_args_rejected(args, patch):
 
 
 @pytest.mark.parametrize("args, expect", [
-    ({"url": " BV1x "}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": False, "vtype": "auto", "work_dir": None}),
+    ({"url": " BV1x "}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": False, "vtype": "auto", "work_dir": None, "reuse_cache": True}),
     ({"url": "BV1x", "summarize": "true", "engine": "cloud", "page": "3", "format": "srt"},
-     {"url": "BV1x", "summarize": True, "engine": "cloud", "page": 3, "fmt": "srt", "visual": False, "vtype": "auto", "work_dir": None}),
-    ({"url": "BV1x", "summarize": 1}, {"url": "BV1x", "summarize": True, "engine": "auto", "page": None, "fmt": "txt", "visual": False, "vtype": "auto", "work_dir": None}),
-    ({"url": "BV1x", "visual": "true"}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": "auto", "vtype": "auto", "work_dir": None}),
-    ({"url": "BV1x", "visual": "PPT"}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": "ppt", "vtype": "auto", "work_dir": None}),
-    ({"url": "BV1x", "visual": True}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": "auto", "vtype": "auto", "work_dir": None}),
-    ({"url": "BV1x", "visual": 0}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": False, "vtype": "auto", "work_dir": None}),
+     {"url": "BV1x", "summarize": True, "engine": "cloud", "page": 3, "fmt": "srt", "visual": False, "vtype": "auto", "work_dir": None, "reuse_cache": True}),
+    ({"url": "BV1x", "summarize": 1}, {"url": "BV1x", "summarize": True, "engine": "auto", "page": None, "fmt": "txt", "visual": False, "vtype": "auto", "work_dir": None, "reuse_cache": True}),
+    ({"url": "BV1x", "visual": "true"}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": "auto", "vtype": "auto", "work_dir": None, "reuse_cache": True}),
+    ({"url": "BV1x", "visual": "PPT"}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": "ppt", "vtype": "auto", "work_dir": None, "reuse_cache": True}),
+    ({"url": "BV1x", "visual": True}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": "auto", "vtype": "auto", "work_dir": None, "reuse_cache": True}),
+    ({"url": "BV1x", "visual": 0}, {"url": "BV1x", "summarize": False, "engine": "auto", "page": None, "fmt": "txt", "visual": False, "vtype": "auto", "work_dir": None, "reuse_cache": True}),
 ])
 def test_args_coerced(args, expect):
     assert mcp_server.validate_digest_args(args) == expect
@@ -373,7 +373,7 @@ class TestStdioProtocol:
             assert {t["name"] for t in tools} == TOOL_NAMES
             dv = next(t for t in tools if t["name"] == "digest_video")
             assert dv["inputSchema"]["required"] == ["url"]
-            assert set(dv["inputSchema"]["properties"]) == {"url", "summarize", "visual", "type", "engine", "page", "format", "output_dir"}
+            assert set(dv["inputSchema"]["properties"]) == {"url", "summarize", "visual", "type", "engine", "page", "format", "output_dir", "reuse_cache"}
 
             # digest_video → job_status → get_transcript（mock pipeline 立即 done）
             send({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
@@ -562,7 +562,7 @@ def test_type_param_routes_and_conflicts(monkeypatch, tmp_path):
                     source="subtitle", elapsed_s=0.05)
 
     def fake_run(url, page=None, engine="auto", lang="zh", visual=False,
-                 work_dir=None, skip_asr=False, no_gate=False):
+                 work_dir=None, skip_asr=False, no_gate=False, **kw):
         captured.update(visual=visual, skip_asr=skip_asr, no_gate=no_gate)
         return pipeline.Result(tr, {"bvid": "BV1tp", "title": "T", "duration": 5})
     monkeypatch.setattr(mcp_server.pipeline, "run", fake_run)

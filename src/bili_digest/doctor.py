@@ -155,8 +155,13 @@ def check_bili_login():
     except CliError as err:
         return ("B站登录态", "凭据文件", FAIL, str(err), "重新执行 digest login")
     if not cred:
+        # 回退：Chrome 插件导出的 BILI_COOKIE（无 refresh_token，过期需重新导出）
+        plugin_cookie = bilibili.cookie_from_keys()
+        if plugin_cookie:
+            return ("B站登录态", "插件 Cookie", WARN, "已配置 BILI_COOKIE（无自动续期，过期需在 Chrome 插件重新导出）",
+                    "可选：执行 digest login 扫码获取自动续期")
         return ("B站登录态", "凭据文件", WARN, "未登录（公开字幕探测受限，ASR 路径不受影响）",
-                "执行 digest login 扫码登录")
+                "执行 digest login 扫码登录，或用 Chrome 插件导出 BILI_COOKIE")
     age = (int(time.time()) - int(cred.get("login_at", 0))) // 86400
     mid = cred.get("cookies", {}).get("DedeUserID")
     renew = "自动续期可用" if cred.get("refresh_token") else "缺 refresh_token（过期需重新登录）"

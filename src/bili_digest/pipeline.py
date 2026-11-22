@@ -253,20 +253,22 @@ def classify_target(target) -> str:
 
 
 def run(target, page=None, engine="auto", lang=None, visual=False, work_dir=None,
-        skip_asr=False, no_gate=False) -> Result:
+        skip_asr=False, no_gate=False, reuse_cache=True) -> Result:
     visual = normalize_visual(visual)
     kind = classify_target(target)
     if kind == "xiaohongshu":
         return run_xiaohongshu(target, engine=engine, lang=lang, visual=visual,
-                               work_dir=work_dir, skip_asr=skip_asr, no_gate=no_gate)
+                               work_dir=work_dir, skip_asr=skip_asr, no_gate=no_gate,
+                               reuse_cache=reuse_cache)
     if kind == "unknown":
         raise CliError(f"认不出这是哪个平台的链接: {target}", 2)
     return run_bilibili(target, page=page, engine=engine, lang=lang, visual=visual,
-                        work_dir=work_dir, skip_asr=skip_asr, no_gate=no_gate)
+                        work_dir=work_dir, skip_asr=skip_asr, no_gate=no_gate,
+                        reuse_cache=reuse_cache)
 
 
 def run_xiaohongshu(target, engine="auto", lang=None, visual=False, work_dir=None,
-                    skip_asr=False, no_gate=False) -> Result:
+                    skip_asr=False, no_gate=False, reuse_cache=True) -> Result:
     visual = normalize_visual(visual)
     note_id, url, info, auth_mode = xiaohongshu.acquire_note(target)
     meta = {
@@ -288,7 +290,9 @@ def run_xiaohongshu(target, engine="auto", lang=None, visual=False, work_dir=Non
         run_dir = _visual_run_dir(meta, work_dir)
         try:
             video_path = enrich.video.fetch_xhs_video(note_id, info["video_urls"],
-                                                      run_dir / "download")
+                                                      run_dir / "download",
+                                                      reuse_cache=reuse_cache,
+                                                      cache_base=work_dir)
         except CliError as err:
             meta["frames"] = []
             meta["visual_error"] = str(err)
@@ -359,7 +363,7 @@ def run_xiaohongshu(target, engine="auto", lang=None, visual=False, work_dir=Non
 
 
 def run_bilibili(target, page=None, engine="auto", lang=None, visual=False, work_dir=None,
-                 skip_asr=False, no_gate=False) -> Result:
+                 skip_asr=False, no_gate=False, reuse_cache=True) -> Result:
     visual = normalize_visual(visual)
     cred = bilibili.maybe_refresh(bilibili.load_cred())
     bvid = bilibili.resolve_bvid(target)
@@ -386,7 +390,8 @@ def run_bilibili(target, page=None, engine="auto", lang=None, visual=False, work
     }
     log(f"{meta['title']} · P{page_no} · {duration}s · {bvid}")
 
-    cookie = bilibili.cookie_header(cred["cookies"]) if cred else None
+    # 凭据优先级：扫码 credentials.json（带 refresh_token 自动续期）> 插件导出的 BILI_COOKIE
+    cookie = bilibili.cookie_header(cred["cookies"]) if cred else bilibili.cookie_from_keys()
 
     def enrich_visual():
         """--visual（B站）：视频轨独立于音轨，transcript 就绪后再下载取帧。失败降级。"""
@@ -395,7 +400,9 @@ def run_bilibili(target, page=None, engine="auto", lang=None, visual=False, work
             stream_info = {}
             t0 = time.time()
             video_path = enrich.video.fetch_bilibili_video(bvid, cid, run_dir / "download",
-                                                           cookie=cookie, info=stream_info)
+                                                           cookie=cookie, info=stream_info,
+                                                           reuse_cache=reuse_cache,
+                                                           cache_base=work_dir)
             meta["video_stream"] = stream_info  # 所选流与体积（S6.3 资源画像）
             meta.setdefault("timings", {})["download_video_s"] = round(time.time() - t0, 1)
         except CliError as err:

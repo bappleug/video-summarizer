@@ -6,6 +6,12 @@ from bili_digest import enrich
 from bili_digest.errors import CliError
 
 
+@pytest.fixture(autouse=True)
+def _isolate_cache(monkeypatch, tmp_path):
+    """每个测试的缓存写入隔离到 tmp_path，不污染 cwd/.bili-digest-cache。"""
+    monkeypatch.setenv("BILI_DIGEST_CACHE_DIR", str(tmp_path / "cache"))
+
+
 def test_pick_video_track_prefers_720p_h264():
     """S6.3 选流：≤720p 内优先 h264 再取最大带宽（读图足够，长视频体积控制）。"""
     tracks = [
@@ -33,6 +39,7 @@ def test_pick_video_track_empty():
 
 
 def test_fetch_bilibili_video_downloads_and_falls_back(monkeypatch, tmp_path):
+    """CDN 回退：首选失败→备选成功；落缓存 + 缓存命中后二次调用不再下载。"""
     calls = {"playurl": 0, "cdn": []}
 
     def fake_api_json(url, cookie=None, form=None, referer=None):
@@ -44,22 +51,40 @@ def test_fetch_bilibili_video_downloads_and_falls_back(monkeypatch, tmp_path):
              "baseUrl": "https://cdn1/v80.m4s", "backupUrl": []},
         ]}}}
 
-    def fake_http(url, cookie=None, form=None, referer=None):
-        calls["cdn"].append(url)
-        if url == "https://cdn1/v32.m4s":
-            return 403, b"", url  # 首选 CDN 被拒 → 换 backup
-        return 200, b"MP4DATA", url
+    class FakeProc:
+        def __init__(self, rc, err=""):
+            self.returncode, self.stderr = rc, err
 
+    def fake_run(cmd, **kw):
+        url = cmd[cmd.index("-i") + 1]
+        calls["cdn"].append(url)
+        out = Path(cmd[-1])
+        if url == "https://cdn1/v32.m4s":
+            return FakeProc(1, "403 Forbidden")  # 首选 CDN 失败 → 换 backup
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(b"MP4DATA" * 200000)  # >1MB 过缓存有效性阈值
+        return FakeProc(0)
+
+    from pathlib import Path
     monkeypatch.setattr(enrich.video.bilibili, "api_json", fake_api_json)
-    monkeypatch.setattr(enrich.video.bilibili, "http", fake_http)
+    monkeypatch.setattr(enrich.video.subprocess, "run", fake_run)
+    monkeypatch.setenv("BILI_DIGEST_CACHE_DIR", str(tmp_path / "cache"))
     info = {}
-    out = enrich.video.fetch_bilibili_video("BV1x", 100, tmp_path, info=info)
-    assert out == tmp_path / "BV1x_100.mp4"
-    assert out.read_bytes() == b"MP4DATA"
+    out = enrich.video.fetch_bilibili_video("BV1x", 100, tmp_path / "run", info=info)
+    assert out == tmp_path / "run" / "BV1x_100.mp4"
+    assert out.read_bytes() == b"MP4DATA" * 200000
     assert calls["playurl"] == 1
     assert calls["cdn"] == ["https://cdn1/v32.m4s", "https://cdn2/v32.m4s"]  # ≤720p h264 轨 + 备选
     assert info["stream_id"] == 32 and info["codec"] == "avc1"
     assert info["resolution"] == "854x480" and "video_mb" in info
+    assert info["cache_hit"] is False
+
+    # 二次调用：命中缓存，不再下载（cdn 调用数不变）
+    info2 = {}
+    out2 = enrich.video.fetch_bilibili_video("BV1x", 100, tmp_path / "run2", info=info2)
+    assert out2.read_bytes() == b"MP4DATA" * 200000
+    assert len(calls["cdn"]) == 2  # 未新增下载
+    assert info2["cache_hit"] is True
 
 
 def test_fetch_bilibili_video_no_dash(monkeypatch, tmp_path):

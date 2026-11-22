@@ -195,12 +195,23 @@ def describe_frame(frame, title=None, owner=None) -> tuple[dict, dict]:
     """单帧 → (描述 dict, 单次 usage)。frame 需带 t 与 path（frames.KeyFrame）。"""
     conf = vision_conf()  # S7.5：单供应商（撤销自动兜底，改宿主接管协议）；手动切换走 VISION_PROVIDER
     b64 = base64.b64encode(frame.path.read_bytes()).decode("ascii")
+    # 图像 URL 格式按供应商区分（2026-11-22 实测）：
+    # - siliconflow（OpenAI 兼容）要求 data URI 前缀，裸 base64 → HTTP 400 code 20015
+    #   "Failed to process the base64 image"；带前缀实测 HTTP 200。
+    # - zhipu GLM 官方要求裸 base64（无前缀），带前缀反而可能失败 → 保持原样。
+    if conf["provider"] == "zhipu":
+        img_url = b64
+    else:
+        suffix = frame.path.suffix.lower().lstrip(".")
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                "webp": "image/webp"}.get(suffix, "image/jpeg")
+        img_url = f"data:{mime};base64,{b64}"
     payload = {
         "model": conf["model"],
         "messages": [{
             "role": "user",
             "content": [
-                {"type": "image_url", "image_url": {"url": b64}},
+                {"type": "image_url", "image_url": {"url": img_url}},
                 {"type": "text", "text": build_prompt(frame.t, title, owner)},
             ],
         }],

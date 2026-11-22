@@ -22,6 +22,6 @@ sed -e "s|__EXTENSION_ID__|$EXTENSION_ID|g" \
 python3 -m json.tool "$DEST" > /dev/null  # 校验生成物是合法 JSON
 
 echo "已写入 $DEST"
-echo "host 脚本：$HOST_PY（已 chmod +x）"
+echo "host 脚本：${HOST_PY}（已 chmod +x）"
 echo "允许的扩展：chrome-extension://$EXTENSION_ID/"
 echo "请完全退出 Chrome（Cmd+Q）后重新打开，再使用「直写 keys.env」。"

@@ -29,7 +29,8 @@ def cmd_digest(args):
     want_report = args.summarize and not args.no_report
     result = pipeline.run(args.target, page=args.page, engine=args.engine, lang=args.lang,
                           visual=visual, skip_asr=profile["skip_asr"],
-                          no_gate=profile["no_gate"])
+                          no_gate=profile["no_gate"],
+                          reuse_cache=not args.no_reuse_cache)
     log(f"{result.transcript.engine}/{result.transcript.source} · "
         f"{len(result.transcript.segments)} 段 · {result.transcript.elapsed_s:.1f}s")
     if not (visual or want_report):
@@ -195,6 +196,10 @@ def build_parser():
                         "禁用口播门控，双通道保证）；auto=系统默认。与 --visual 互斥")
     p.add_argument("--no-report", action="store_true",
                    help="素材场景：跳过 LLM 总结报告（report.md 不生成；assets 素材包仍产出）")
+    p.add_argument("--no-reuse-cache", action="store_true",
+                   help="禁用视频轨缓存复用：强制重新下载并刷新缓存（默认复用；"
+                        "缓存位置 <当前工作目录>/.bili-digest-cache/videos，"
+                        "可用 BILI_DIGEST_CACHE_DIR 覆盖）")
     p.add_argument("--provider", choices=("zhipu", "deepseek", "siliconflow"), default=None,
                    help="总结 LLM provider（默认 siliconflow/DeepSeek-V4.1-Flash；keys.env 可用 "
                         "SUMMARIZE_PROVIDER=zhipu|deepseek|siliconflow 设持久化默认，"

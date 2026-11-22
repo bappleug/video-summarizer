@@ -1,0 +1,10 @@
+#!/bin/sh
+# WorkBuddy MCP 启动器：指向本地源码，避免 editable install
+PROJECT_DIR="$HOME/ai-tools/video-summarizer"
+export PYTHONPATH="$PROJECT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+# MCP 客户端拉起的进程 PATH 常被裁剪，显式补入 ffmpeg / uv / Homebrew 所在目录
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
+# 清除沙箱/系统代理：代理会把 B站 CDN 劫持到第三方域名并在 9MB 处断流，
+# 导致 slides 模式视频下载失败。B站/小红书/硅基流动均为国内直连站点，无需代理。
+unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
+exec "$PROJECT_DIR/.venv/bin/python" -m bili_digest.cli mcp "$@"
