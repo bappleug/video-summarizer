@@ -70,6 +70,7 @@ video-parser/
 ### Git
 - 本仓库文档与工具代码全部入库；`vendors/`、`runs/` 已 gitignore。
 - **远端与分支**（2026-11-23 重建）：远端 `origin` = `bappleug/video-summarizer`（公开仓，车队 `uvx` 安装源，根布局不可动）。本地 `main` 与 `origin/main` 对齐、**不在其上提交**；日常工作在 `workspace` 分支（覆盖整个工作区，历史续接发布仓）。
+- **主工作目录永远停在 `workspace`，不要 checkout `main`**（2026-11-23 实踩）：切到 `main` 会把整个目录重排成发布布局——`docs/`、`tools/` 的受控文件从工作树消失、根目录出现 `digest-mcp`/`src`/`tests`，看似文件丢失；实际都安全在 `workspace` 分支里，`git checkout workspace` 即可整体恢复（`runs/`、`.venv` 等 ignored 内容不受影响，但 `~/.local/bin/bili` 软链与 Chrome 宿主脚本会随之短暂失效）。判断特征：`git status` 只剩 `?? tools/`。要在发布布局下操作，用临时 worktree（`git worktree add`），不动主目录。
 - **工作区 ↔ 发布仓映射**：远端根目录 ↔ `tools/bili-digest/`；远端 `cookie-exporter/` ↔ `tools/cookie-exporter/`；`docs/`、`tools/bili-subtitle/`、`tools/asr-bench/` 仅存在于工作区。已知 3 个文件含布局相对路径（`tools/cookie-exporter/` 下 `README.md`、`js/exporters.js`、`tests/exporters.test.js`），同步到任一侧时须按目标布局改写。核对两侧差异用 `git diff -M --name-status main workspace`。
 - `workspace` 分支默认**不推送**（含内部文档，且远端为公开仓）；推送前须用户确认。
 - 提交时机自主判断：完成一个阶段或一组自洽的改动即提交，保持提交粒度可回溯。
