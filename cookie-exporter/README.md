@@ -22,7 +22,6 @@ cookie-exporter/
 │   ├── host.py          # 只认 write_key：target 白名单 + 固定路径 + 0600
 │   ├── com.raymin.cookie_exporter.json   # host manifest 模板（占位符，由安装脚本实例化）
 │   ├── install-host.sh / uninstall-host.sh
-│   └── extension_key.pem  # 扩展签名私钥（gitignore，绝不入库，见「私钥与稳定 ID」）
 └── tests/               # node --test（扩展侧）+ python3 unittest（host 侧），零依赖
 ```
 
@@ -123,20 +122,28 @@ host 侧覆盖（8 个用例，`tests/test_host.py`）：以真实协议帧通�
 
 ## 私钥与稳定扩展 ID
 
-host 的 `allowed_origins` 必须写死扩展 ID，而「加载已解压的扩展程序」默认每次生成随机 ID。因此 `manifest.json` 里放了 `key` 字段（`native/extension_key.pem` 私钥对应的公钥），把扩展 ID 锁定为：
+host 的 `allowed_origins` 必须写死扩展 ID，而「加载已解压的扩展程序」默认每次生成随机 ID。因此 `manifest.json` 里放了 `key` 字段（公钥），把扩展 ID 锁定为：
 
 ```
 cilhmdbgnppkdmeonmdfnijpejfmfclm
 ```
 
-- 私钥文件 `native/extension_key.pem`（0600）**已通过本目录 `.gitignore` 排除，绝不入库**：泄露它的人可以发布同 ID 的冒充扩展、进而通过本 host 写 keys.env。请在离线备份中单独保管。
-- 私钥若丢失，扩展 ID 会变：重新生成密钥对 → 更新 `manifest.key` 与 `install-host.sh` 里的 ID → 重跑安装脚本即可。
-- 重新生成密钥的命令（供重建时参考）：
+**使用者无需任何密钥文件**：Chrome 只凭 `manifest.json` 里的公钥就能算出这个 ID，clone 仓库后直接加载即可。扩展运行时不读取任何私钥。
+
+**维护者须知**：与该公钥配对的私钥 `extension_key.pem` **不在仓库内、也不要放进本目录**——
+
+- 放进扩展目录会被 Chrome 一并装进浏览器并弹出「This extension includes the key file …」警告；扩展运行并不需要它。
+- 它只由维护者在**仓库外**离线保管（0600，不在任何 git 仓库内）。泄露它的人可以发布同 ID 的冒充扩展、进而通过本 host 写 keys.env。
+- 私钥若丢失，扩展 ID 会变：重新生成密钥对 → 更新 `manifest.key` 与 `install-host.sh` 里的 ID → 所有使用者重跑安装脚本并重新加载扩展。
+- 本目录 `.gitignore` 仍保留 `native/extension_key.pem` 一条，作为防止误提交的兜底。
+- 重新生成密钥的命令（供维护者重建时参考；把私钥生成到仓库外，不要生成到本目录）：
 
   ```sh
-  openssl genrsa -out native/extension_key.pem 2048 && chmod 600 native/extension_key.pem
-  openssl rsa -in native/extension_key.pem -pubout -outform DER | base64 | tr -d '\n'   # 贴入 manifest.key
-  openssl rsa -in native/extension_key.pem -pubout -outform DER | shasum -a 256         # 前 32 hex → a-p 字母表即新 ID
+  KEY=~/.config/ai-tools/cookie-exporter/extension_key.pem   # 仓库外的保管位置
+  mkdir -p "$(dirname "$KEY")" && chmod 700 "$(dirname "$KEY")"
+  openssl genrsa -out "$KEY" 2048 && chmod 600 "$KEY"
+  openssl rsa -in "$KEY" -pubout -outform DER | base64 | tr -d '\n'   # 贴入 manifest.key
+  openssl rsa -in "$KEY" -pubout -outform DER | shasum -a 256         # 前 32 hex → a-p 字母表即新 ID
   ```
 
 ## 验证边界与手测清单
