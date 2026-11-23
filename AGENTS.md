@@ -11,13 +11,19 @@
 ```
 video-parser/
 ├── AGENTS.md              # 本文件：规范与目录说明（随项目演进持续更新）
-├── README.md              # 项目总览与导览
+├── README.md              # 工作区总览与导览
 ├── docs/
-│   ├── PRD.md             # 产品需求文档（Phase 2 定稿）
+│   ├── PRD.md             # 产品需求文档（v1.0 Phase 2 定稿；v1.1 现状对齐标注）
+│   ├── 方案设计.md         # 架构与实施方案（模块/接口/抽件对照/冲刺拆解，Phase 3 开工蓝图）
 │   ├── 进度记录.md         # 阶段（Phase）与版本进度、决策记录、调研日志
-│   └── research/          # 调研与实测评估报告（一个主题一个文件，编号命名）
+│   ├── 安装与下载台账.md    # 系统级安装与下载登记（离场干净）
+│   ├── research/          # 调研与实测评估报告（一个主题一个文件，编号命名）
+│   └── handoffs/          # subagent 交接文档（一个冲刺/主题一个文件）
 ├── tools/                 # 我们自己构建/维护的工具（每个工具一个子目录，自带 README 与测试）
-│   └── bili-subtitle/     # B站字幕抓取 CLI（登录态 + 自动续期，软链到 ~/.local/bin/bili）
+│   ├── bili-digest/       # 主产品：B站/小红书视频转写与总结（CLI digest + MCP Server）
+│   ├── cookie-exporter/   # Chrome 插件：Cookie 一键导出直写 keys.env
+│   ├── bili-subtitle/     # 早期独立 CLI：B站字幕抓取（软链到 ~/.local/bin/bili）
+│   └── asr-bench/         # Phase 1 本地 ASR 基准脚本
 ├── vendors/               # 第三方开源项目的只读克隆（gitignore，不入库）
 └── runs/                  # 实测运行的产物输出（gitignore，不入库）
 ```
