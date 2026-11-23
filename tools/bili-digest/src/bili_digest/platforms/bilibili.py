@@ -80,6 +80,8 @@ def http(url, cookie=None, form=None, referer=WEB + "/"):
         return err.code, err.read(), err.headers
     except urllib.error.URLError as err:
         raise CliError(f"网络不可用: {err.reason}", 4)
+    except OSError as err:  # 读阶段的 TimeoutError 等不是 URLError 的网络错误
+        raise CliError(f"网络不可用: {err}", 4)
 
 
 def api_json(url, cookie=None, form=None, referer=WEB + "/"):
@@ -138,6 +140,37 @@ def save_cred(cred):
     finally:
         if os.path.exists(tmp):
             os.unlink(tmp)
+
+
+def login_state():
+    """实测登录态：用生效中的 cookie 调 nav 接口（凭据优先级与管线一致：扫码凭据 >
+    插件 BILI_COOKIE）。返回 dict：source（"credentials.json" / "BILI_COOKIE" / None 未配置）、
+    logged_in、uname、mid、cred（扫码凭据，其余为 None）。未配置时不打接口；
+    网络/风控以 CliError 抛出，由调用方决定如何呈现。"""
+    cred = load_cred()
+    if cred:
+        cookie, source = cookie_header(cred["cookies"]), "credentials.json"
+    else:
+        cookie = cookie_from_keys()
+        if not cookie:
+            return {"source": None, "logged_in": False, "uname": None, "mid": None, "cred": None}
+        source = "BILI_COOKIE"
+    data = api_json(f"{API}/x/web-interface/nav", cookie=cookie)
+    body = data.get("data") or {}
+    return {"source": source, "logged_in": data.get("code") == 0,
+            "uname": body.get("uname"), "mid": body.get("mid"), "cred": cred}
+
+
+def login_hint(source):
+    """未登录/登录态失效时的出路（status 与 doctor 共用）；source 同 login_state()。"""
+    if source is None:
+        return "执行 digest login 扫码登录，或用 Chrome 插件导出 BILI_COOKIE"
+    if source == "credentials.json":
+        if cookie_from_keys():
+            return (f"重新执行 digest login 扫码；已配置 BILI_COOKIE，删除 {CRED_PATH} 即可改用插件 Cookie"
+                    "（凭据文件存在时会优先生效）")
+        return "重新执行 digest login 扫码"
+    return "在 Chrome 插件里重新导出 BILI_COOKIE，或执行 digest login 扫码"
 
 
 # ---------------------------------------------------------------- WBI
@@ -385,6 +418,10 @@ def parse_set_cookie(headers):
     return merged
 
 
+# 续期失败的公共后缀：续期不成不代表登录态已失效，别一上来就叫用户重新登录
+RENEW_FAIL_HINT = "；凭据通常仍有效，digest status 显示失效后再重新 digest login"
+
+
 def refresh_cred(cred, force=False):
     cookies = cred["cookies"]
     cookie = cookie_header(cookies)
@@ -395,16 +432,16 @@ def refresh_cred(cred, force=False):
     if not payload.get("refresh") and not force:
         return False
     if not cred.get("refresh_token"):
-        raise CliError("缺少 refresh_token，无法自动续期，请重新 digest login", 3)
+        raise CliError("缺少 refresh_token，无法自动续期" + RENEW_FAIL_HINT, 3)
 
     timestamp = payload.get("timestamp") or int(time.time() * 1000)
     path = correspond_path(timestamp)
     status, raw, _ = http(f"{WEB}/correspond/1/{path}", cookie=f"SESSDATA={cookies['SESSDATA']}")
     if status >= 400:
-        raise CliError(f"取 refresh_csrf 失败（HTTP {status}），重新 digest login", 3)
+        raise CliError(f"取 refresh_csrf 失败（HTTP {status}）" + RENEW_FAIL_HINT, 3)
     match = re.search(r'<div id="1-name">([\s\S]+?)</div>', raw.decode("utf-8", "ignore"))
     if not match:
-        raise CliError("correspond 页面里没有 refresh_csrf，B站可能改了机制，重新 digest login", 3)
+        raise CliError("correspond 页面里没有 refresh_csrf：B站已改续期机制，自动续期不可用" + RENEW_FAIL_HINT, 3)
     refresh_csrf = html_lib.unescape(match.group(1)).strip()
 
     old_token = cred["refresh_token"]
@@ -452,5 +489,5 @@ def maybe_refresh(cred):
         if refresh_cred(cred):
             log("已自动续期 cookie")
     except CliError as err:
-        log(f"自动续期跳过: {err}")
+        log(f"自动续期未成功: {err}")
     return cred

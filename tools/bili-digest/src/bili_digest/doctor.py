@@ -5,7 +5,7 @@
 - 硅基流动 GET /v1/models（原 /v1/user/info 已下线返回 410，models 只读零成本）
 - 智谱一条极短 chat（glm-5.3-flash；原定免费的 glm-4-flash 对 Coding Plan key 报「套餐到期」，不可用）
 - DeepSeek GET /user/balance（查余额）
-B站登录态只读本地凭据文件判断（不打 API，不消耗风控预算）。
+B站登录态实测 nav 接口（与 digest status 同源；未配置任何凭据时不打 API）。
 """
 
 import json
@@ -151,23 +151,23 @@ def check_local():
 
 def check_bili_login():
     try:
-        cred = bilibili.load_cred()
+        state = bilibili.login_state()
     except CliError as err:
-        return ("B站登录态", "凭据文件", FAIL, str(err), "重新执行 digest login")
-    if not cred:
-        # 回退：Chrome 插件导出的 BILI_COOKIE（无 refresh_token，过期需重新导出）
-        plugin_cookie = bilibili.cookie_from_keys()
-        if plugin_cookie:
-            return ("B站登录态", "插件 Cookie", WARN, "已配置 BILI_COOKIE（无自动续期，过期需在 Chrome 插件重新导出）",
-                    "可选：执行 digest login 扫码获取自动续期")
+        if err.code == 3:  # 凭据文件损坏：重试无用
+            return ("B站登录态", "凭据文件", FAIL, str(err), "重新执行 digest login")
+        return ("B站登录态", "登录实测", WARN, f"无法验证登录态（{err}）", "稍后重试 digest doctor")
+    source, cred = state["source"], state["cred"]
+    if source is None:
         return ("B站登录态", "凭据文件", WARN, "未登录（公开字幕探测受限，ASR 路径不受影响）",
-                "执行 digest login 扫码登录，或用 Chrome 插件导出 BILI_COOKIE")
-    age = (int(time.time()) - int(cred.get("login_at", 0))) // 86400
-    mid = cred.get("cookies", {}).get("DedeUserID")
-    renew = "自动续期可用" if cred.get("refresh_token") else "缺 refresh_token（过期需重新登录）"
-    state = OK if cred.get("refresh_token") else WARN
-    return ("B站登录态", "凭据文件", state, f"已登录（mid {mid}，{age} 天，{renew}）",
-            "无需处理" if cred.get("refresh_token") else "失效前重新 digest login")
+                bilibili.login_hint(source))
+    carrier = "扫码凭据" if cred else "插件 Cookie"
+    if not state["logged_in"]:
+        return ("B站登录态", carrier, WARN, "登录态已失效（公开字幕探测受限，ASR 路径不受影响）",
+                bilibili.login_hint(source))
+    age = f"{(int(time.time()) - int(cred.get('login_at', 0))) // 86400} 天，" if cred else ""
+    return ("B站登录态", carrier, OK,
+            f"已登录（mid {state['mid']}，{age}自动续期不可用，失效后需重新登录）",
+            "失效后" + bilibili.login_hint(source))
 
 
 def check_xhs_cookie():
@@ -241,6 +241,6 @@ def main():
     if fails:
         print(f"体检结论：{len(fails)} 项异常，按「下一步动作」修复后重跑 digest doctor")
         return 1
-    warns = [r for r in rows if r[1] == WARN]
+    warns = [r for r in rows if r[2] == WARN]
     print(f"体检结论：无异常（{len(warns)} 项可按需优化）")
     return 0

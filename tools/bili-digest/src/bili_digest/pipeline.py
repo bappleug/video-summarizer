@@ -390,7 +390,7 @@ def run_bilibili(target, page=None, engine="auto", lang=None, visual=False, work
     }
     log(f"{meta['title']} · P{page_no} · {duration}s · {bvid}")
 
-    # 凭据优先级：扫码 credentials.json（带 refresh_token 自动续期）> 插件导出的 BILI_COOKIE
+    # 凭据优先级：扫码 credentials.json（不会自动续期）> 插件导出的 BILI_COOKIE
     cookie = bilibili.cookie_header(cred["cookies"]) if cred else bilibili.cookie_from_keys()
 
     def enrich_visual():

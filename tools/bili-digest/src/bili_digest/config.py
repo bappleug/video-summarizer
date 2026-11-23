@@ -14,8 +14,6 @@ os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 # mlx-whisper 模型（HF repo id；已缓存在 ~/.cache/huggingface，勿重复下载）
 MLX_MODEL = os.environ.get("BILI_DIGEST_MLX_MODEL", "mlx-community/whisper-large-v3-turbo")
 
-DEFAULT_LANG = "zh"
-
 # ---------------------------------------------------------------- API keys
 # key 来源优先级：环境变量 > ~/.config/ai-tools/bili-digest/keys.env。
 # 文件在仓库外、0600，值绝不打印、绝不入库。
