@@ -149,7 +149,7 @@ def cmd_mcp(args):
         import mcp  # noqa: F401 — 只探测 [mcp] extra 是否安装
     except ImportError:
         log("缺少 mcp SDK：UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple "
-            "uv pip install --python .venv/bin/python -e '.[mcp]'（详见 README「MCP 接入」）")
+            "uv pip install --python .venv/bin/python -e '.[mcp]'（详见 README「三步上手 → ② 接入你的 MCP 客户端」）")
         return 2
     from . import mcp_server
     return mcp_server.main()

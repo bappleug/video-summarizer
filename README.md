@@ -1,4 +1,6 @@
-# bili-digest
+# video-parser（bili-digest）
+
+本仓库提供视频转写与总结工具 **bili-digest**：命令行 `digest` 与 MCP Server 两种用法（安装与接入见下文）。`video-parser` 只是本地工作区目录名（可随意命名），与使用无关——clone 到任意目录均可。
 
 B站 / 小红书视频转写与总结工具：一条命令把视频变成文字——**字幕优先（带污染校验）→ 无字幕自动回退语音识别（本地 mlx / 云端免费 SenseVoice）→（可选）LLM 中文总结报告 →（可选）关键帧画面增强**。支持 CLI 与 MCP 两种用法。
 
@@ -49,7 +51,7 @@ MCP 直接指向**本地源码目录自带的启动脚本** `digest-mcp`（仓�
 ```bash
 cd ~/ai-tools/video-summarizer
 chmod +x digest-mcp
-# 首次装依赖：uv 建环境 + 装 MCP 运行所需包（详见 AGENTS.md「依赖版本锁定」）
+# 首次装依赖：uv 建环境 + 装 MCP 运行所需包（详见 AGENTS.md「B. 安装、配置与运维」的 B1/B2）
 uv venv .venv
 uv pip install 'mcp>=2.0' mcp-types pydantic pydantic-settings cryptography
 ```
@@ -152,6 +154,21 @@ cd ~/ai-tools/video-summarizer
 - **小红书反爬**：风控比 B站严——匿名访问分享页常被安全拦截（error_code 300031），实测 `XHS_COOKIE` 事实必需；分享链接的 `xsec_token` 有时效，过期请从 App 重新分享取新链接。仅支持视频笔记，图文不支持（退出码 2 明确提示）。
 - **云转写时长**：硅基流动 SenseVoice 单文件 ≤1 小时；超长视频请用本地 mlx 引擎。
 - **本地引擎**：mlx 仅 Apple Silicon 可用；`--visual` 需要系统 ffmpeg（`brew install ffmpeg`）。
+
+## 项目结构
+
+仓库根目录即产品目录（`pyproject.toml`、`src/`、`tests/`、启动脚本 `digest-mcp`、`LICENSE`），以下内容随仓库一并公开：
+
+- [docs/PRD.md](docs/PRD.md) — 产品需求文档；[docs/方案设计.md](docs/方案设计.md) — 架构与实施方案（模块 / 接口 / 抽件对照 / 冲刺拆解）
+- [docs/进度记录.md](docs/进度记录.md) — 阶段进度、决策记录（D-NNN）、调研日志
+- [docs/research/](docs/research/) — 调研与实测评估报告（01–05）；[docs/handoffs/](docs/handoffs/) — 各冲刺的 subagent 交接文档
+- [docs/安装与下载台账.md](docs/安装与下载台账.md) — 系统级安装与下载登记
+- [cookie-exporter/](cookie-exporter/) — Chrome 插件（安装见上文）：把小红书 / B站 Cookie 一键直写 `keys.env`
+- [scripts/bili-subtitle/](scripts/bili-subtitle/) — 早期独立 CLI：B站字幕抓取（软链 `~/.local/bin/bili`，逻辑已并入 bili-digest）
+- [scripts/asr-bench/](scripts/asr-bench/) — Phase 1 本地 ASR 基准脚本
+- `runs/`、`vendors/` — 实测产物输出、第三方开源项目只读克隆（不入库）
+
+当前状态：Phase 3（MVP：transcript 管线 CLI + MCP Server）已完成并发布；S5（SQLite 历史 + 批量队列）不做（D-015）；Phase 4（面向非程序员的本地界面）未启动（小红书支持已在 S4 完成）。详见 [进度记录](docs/进度记录.md)。
 
 ## 开发
 

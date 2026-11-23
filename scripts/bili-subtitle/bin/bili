@@ -1,0 +1,13 @@
+#!/bin/sh
+# bili 启动包装：解析软链后从脚本目录找 bili.py，不受工作目录影响
+SELF=$0
+while [ -L "$SELF" ]; do
+  DIR=$(cd "$(dirname "$SELF")" && pwd)
+  SELF=$(readlink "$SELF")
+  case $SELF in
+    /*) ;;
+    *) SELF="$DIR/$SELF" ;;
+  esac
+done
+DIR=$(cd "$(dirname "$SELF")" && pwd)
+exec python3 "$DIR/../bili.py" "$@"

@@ -1,6 +1,6 @@
 """DASH 音频下载 + ffmpeg 转 16k 单声道 wav（ASR 前置）。
 
-下载逻辑复制自 tools/asr-bench/fetch_audio.py，改造点：
+下载逻辑复制自 scripts/asr-bench/fetch_audio.py，改造点：
 - 音轨选择独立成 pick_audio_track()（最大带宽优先，缺失带宽按 0 处理）
 - m4a 走临时文件，转码成功后清理
 - ffmpeg 转码校验（退出码 + 产物存在且大于 wav 头）

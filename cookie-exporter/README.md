@@ -1,6 +1,6 @@
 # cookie-exporter — Cookie 导出助手（Chrome MV3 扩展）
 
-一个极简的 Chrome 浏览器插件：检测**小红书 / 哔哩哔哩**的登录态，点一下按钮就把完整 Cookie **直写**进 `~/.config/ai-tools/bili-digest/keys.env`（Native Messaging 本机助手，免手动粘贴）。面向不想打开开发者工具翻 Application 面板的非程序员，是 [bili-digest](../bili-digest/) 工具链的配套，但本身是通用工具，加站点只改一个文件。
+一个极简的 Chrome 浏览器插件：检测**小红书 / 哔哩哔哩**的登录态，点一下按钮就把完整 Cookie **直写**进 `~/.config/ai-tools/bili-digest/keys.env`（Native Messaging 本机助手，免手动粘贴）。面向不想打开开发者工具翻 Application 面板的非程序员，是 [bili-digest](../README.md) 工具链的配套，但本身是通用工具，加站点只改一个文件。
 
 - 零第三方库：原生 JavaScript + python3 标准库，无构建步骤。
 - 零网络权限：插件与本机助手都不发起任何网络请求（见下方「安全模型」）。
