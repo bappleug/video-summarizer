@@ -31,7 +31,7 @@
 - `output_dir`：产物目录，绝对或相对 runs 根。
 
 ### A5. 凭据优先级（B站）
-扫码 `credentials.json`（带 refresh_token 自动续期） > 插件导出的 `BILI_COOKIE`（keys.env，无续期，过期需重新导出）。`digest_doctor` 显示当前用哪种。key 一律填 `~/.config/ai-tools/bili-digest/keys.env`，**不经对话传递**。
+扫码 `credentials.json` > 插件导出的 `BILI_COOKIE`（keys.env；仅 credentials.json 不存在时生效）。B站已改续期机制，两种凭据都不会自动续期。`digest_doctor` 实测登录态并显示当前用哪种，失效时按其「下一步动作」处理：扫码凭据重新 `digest login`（已配 `BILI_COOKIE` 时删除 credentials.json 即可改用），插件 Cookie 回插件重新导出。key 一律填 `~/.config/ai-tools/bili-digest/keys.env`，**不经对话传递**。
 
 ### A6. 缓存语义
 视频轨缓存在 **Agent 当前工作目录** `.bili-digest-cache/videos/`（MCP server 的 cwd 即 WorkBuddy 工作目录）。缓存键 = 平台+视频ID+分P cid+流ID；命中则硬链接复用、跳过下载。用户做完工作项删整个 `.bili-digest-cache/` 即可清理。`BILI_DIGEST_CACHE_DIR` 可改位置。
@@ -84,7 +84,17 @@ Intel Mac + 老环境下，别用 `uvx --from ...@git+` 和 `uv pip install -e .
 
   ```sh
   #!/bin/sh
-  PROJECT_DIR="$HOME/ai-tools/video-summarizer"
+  # 按脚本自身位置定位源码（解析软链），不依赖 clone 到哪个目录
+  SELF=$0
+  while [ -L "$SELF" ]; do
+    DIR=$(cd "$(dirname "$SELF")" && pwd)
+    SELF=$(readlink "$SELF")
+    case $SELF in
+      /*) ;;
+      *) SELF="$DIR/$SELF" ;;
+    esac
+  done
+  PROJECT_DIR=$(cd "$(dirname "$SELF")" && pwd)
   export PYTHONPATH="$PROJECT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
   export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"   # B4
   unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy      # B5

@@ -40,6 +40,8 @@ git clone https://github.com/bappleug/video-summarizer ~/ai-tools/video-summariz
 
 目标是本地路径 `~/ai-tools/video-summarizer/`——后面的 MCP 配置和 CLI 都基于它。已装过可跳过这步。
 
+放在 `~/ai-tools` 只是建议位置，clone 到任意目录均可：`digest-mcp` 按自身位置定位源码，把下文示例路径换成你的 clone 目录即可。
+
 ### ② 接入你的 MCP 客户端
 
 MCP 直接指向**本地源码目录自带的启动脚本** `digest-mcp`（仓库根目录，已带可执行权限）。先确认它可执行、依赖就绪：
@@ -119,7 +121,7 @@ cd ~/ai-tools/video-summarizer
 | `digest <目标> --visual --summarize` | 画面增强 + 嵌帧报告（`--visual=ppt` 为讲义模式） |
 | `digest <目标> --no-reuse-cache` | 强制重下并刷新视频缓存（默认复用缓存） |
 | `digest report runs/BV.../<run-id>` | 对已有 transcript 补生成报告 |
-| `digest doctor` | 环境与 key 体检（已配置的 key 会真实 ping，约 ¥0.001/项） |
+| `digest doctor` | 环境与 key 体检（已配置的 key 会真实 ping，约 ¥0.001/项；B站登录态实测 nav 接口） |
 | `digest login` / `digest status` | B站扫码登录 / 查看登录态 |
 | `digest mcp` | 启动 MCP stdio server（需 `[mcp]` extra） |
 
@@ -134,19 +136,19 @@ cd ~/ai-tools/video-summarizer
 - **`--visual` 画面增强**：敏感边界检测取帧 + pHash 聚簇取每页最全状态 + VLM 逐帧读图（转录画面文字），与 transcript 按时间戳融合成富化时间轴；auto 模式带画面价值门控，口播类视频自动诚实降级不浪费读图费。读图约 ¥0.001-0.05/条视频。
 - **素材包**：`assets.json`（机读：帧清单 + 描述 + 时间点 + transcript 概要）与 `assets.md`（人读），MCP `get_assets` / `get_frame` 可直接回放。
 - **视频缓存**：`--visual`/`slides`/`mixed` 下载的视频轨缓存在**当前工作目录**的 `.bili-digest-cache/videos/`（MCP server 的 cwd 即 Agent 工作目录）。缓存键为 `平台+视频ID+分P+流ID`，同一视频二次运行直接复用、跳过下载；清晰度/编码变化自动换键。用户做完工作项后，删整个 `.bili-digest-cache/` 即可手动清理视频缓存。`reuse_cache=false`（MCP）或 `--no-reuse-cache`（CLI）可强制重下刷新。环境变量 `BILI_DIGEST_CACHE_DIR` 可改缓存位置。
-- **LLM 报告**：`--summarize` 一次调用出结构化 Markdown 报告（约 ¥0.01-0.02/次），usage 与成本记入 run 目录 `meta.json`；网络错误自动退避重试。
+- **LLM 报告**：`--summarize` 一次调用出结构化 Markdown 报告（约 ¥0.005–0.02/次；默认硅基流动约 ¥0.005），usage 与成本记入 run 目录 `meta.json`；网络错误自动退避重试。
 - **MCP server**（`digest mcp`，9 工具）：`digest_video`（提交后台任务）/ `job_status` / `get_transcript` / `get_report` / `get_assets` / `get_frame`（帧图 base64，多模态客户端直接看图）/ `cancel` / `digest_doctor` / `get_manual`（完整技术手册，按需取用）。
 
 ## 凭据与安全
 
 - 所有云服务 key 统一放 `~/.config/ai-tools/bili-digest/keys.env`（权限 0600）：`SILICONFLOW_API_KEY`（默认全能力：读图 + 总结 + 云转写）、`ZHIPU_API_KEY` / `DEEPSEEK_API_KEY`（可选备用）、`XHS_COOKIE`（小红书，浏览器登录后复制整条 Cookie 值）。也支持同名环境变量。
-- B站登录凭据优先取 `~/.config/ai-tools/bili/credentials.json`（0600），`digest login` 扫码获取，带 refresh_token 可自动续期。若该文件不存在，会回退读取 `BILI_COOKIE`（即 Chrome 插件 cookie-exporter 导出的 Cookie 字符串，写在 keys.env，无需扫码）——但插件 Cookie 不带 refresh_token、不会自动续期，过期需在插件里重新导出。`digest doctor` 会显示当前用的是哪种。
+- B站登录凭据优先取 `~/.config/ai-tools/bili/credentials.json`（0600），`digest login` 扫码获取；仅当该文件不存在时，才回退读取 `BILI_COOKIE`（即 Chrome 插件 cookie-exporter 导出的 Cookie 字符串，写在 keys.env，无需扫码）。**B站已改续期机制，两种凭据都不会自动续期**，失效后需重新登录：扫码凭据重新 `digest login`（若已配置 `BILI_COOKIE`，删除 credentials.json 即可改用插件 Cookie）；插件 Cookie 回插件重新导出。`digest status` / `digest doctor` 会实测登录态，并告诉你当前用的是哪种、失效后怎么办。
 - **key 永远不通过对话、issue 或文档传递**；本工具也不会把 key 打进任何日志。
 - 可选覆盖变量（keys.env 或环境变量）：`VISION_PROVIDER` / `SUMMARIZE_PROVIDER`（`siliconflow|zhipu|deepseek`）、`VISION_MODEL`（读图模型覆盖）。
 
 ## 已知限制
 
-- **B站登录态**：多数公开视频不登录也能抓字幕；登录后更稳。扫码凭据带 refresh_token 自动续期，彻底过期需重新 `digest login`；若用的是插件导出的 `BILI_COOKIE`，则无自动续期、过期需回插件重新导出。
+- **B站登录态**：多数公开视频不登录也能抓字幕；登录后更稳。B站已改续期机制，自动续期不可用（扫码凭据虽带 refresh_token 也无法续期）；失效后 `digest status` / `digest doctor` 会明确提示，按提示重新 `digest login`（扫码凭据）或回 Chrome 插件重新导出 `BILI_COOKIE`（插件 Cookie）。
 - **小红书反爬**：风控比 B站严——匿名访问分享页常被安全拦截（error_code 300031），实测 `XHS_COOKIE` 事实必需；分享链接的 `xsec_token` 有时效，过期请从 App 重新分享取新链接。仅支持视频笔记，图文不支持（退出码 2 明确提示）。
 - **云转写时长**：硅基流动 SenseVoice 单文件 ≤1 小时；超长视频请用本地 mlx 引擎。
 - **本地引擎**：mlx 仅 Apple Silicon 可用；`--visual` 需要系统 ffmpeg（`brew install ffmpeg`）。
@@ -158,7 +160,7 @@ git clone https://github.com/bappleug/video-summarizer ~/ai-tools/video-summariz
 cd ~/ai-tools/video-summarizer
 uv venv
 uv pip install -e ".[dev]"        # Apple Silicon 本地转写：".[dev,mlx]"
-.venv/bin/python -m pytest        # 330 个测试
+.venv/bin/python -m pytest        # 全量单测（离线）
 ```
 
 > 若仓库是「装依赖而非 editable install」方式装的（见 AGENTS.md），跑测试需带 `PYTHONPATH=src`。

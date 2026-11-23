@@ -64,7 +64,7 @@ bash ~/path/to/video-summarizer/cookie-exporter/native/install-host.sh
 ## 常见问题
 
 - **明明登录了，却显示「未登录」？** 多半是登录网站和安装插件不在同一个 Chrome Profile，或在隐身窗口里登录的。请在同一个 Profile 下登录后重试。
-- **点了导出报「本机助手未安装」？** 按状态行里显示的命令运行 install-host.sh（在 ai-tools 仓库根目录下运行，或自行补全绝对路径），然后**完全退出 Chrome（Cmd+Q）再重开**。仍失败时确认扩展详情页 ID 是 `cilhmdbgnppkdmeonmdfnijpejfmfclm`（与 host 注册的 allowed_origins 一致才会放行）。
+- **点了导出报「本机助手未安装」？** 按状态行里显示的命令运行 install-host.sh（在本仓库根目录下运行，或自行补全绝对路径），然后**完全退出 Chrome（Cmd+Q）再重开**。仍失败时确认扩展详情页 ID 是 `cilhmdbgnppkdmeonmdfnijpejfmfclm`（与 host 注册的 allowed_origins 一致才会放行）。
 - **Cookie 会过期吗？** 会。网站登录态失效后重新登录、再点一次导出即可。
 
 ## 运行测试（开发者）

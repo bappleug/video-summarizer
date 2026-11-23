@@ -1,6 +1,16 @@
 #!/bin/sh
 # WorkBuddy MCP 启动器：指向本地源码，避免 editable install
-PROJECT_DIR="$HOME/ai-tools/video-summarizer"
+# 按脚本自身位置定位源码（解析软链），不依赖 clone 到哪个目录
+SELF=$0
+while [ -L "$SELF" ]; do
+  DIR=$(cd "$(dirname "$SELF")" && pwd)
+  SELF=$(readlink "$SELF")
+  case $SELF in
+    /*) ;;
+    *) SELF="$DIR/$SELF" ;;
+  esac
+done
+PROJECT_DIR=$(cd "$(dirname "$SELF")" && pwd)
 export PYTHONPATH="$PROJECT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 # MCP 客户端拉起的进程 PATH 常被裁剪，显式补入 ffmpeg / uv / Homebrew 所在目录
 export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"

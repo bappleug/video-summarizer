@@ -55,8 +55,86 @@ def test_main_maps_cli_error_code(monkeypatch):
 
 def test_status_not_logged_in(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(bilibili, "CRED_PATH", str(tmp_path / "none.json"))
+    monkeypatch.setattr(bilibili, "cookie_from_keys", lambda: None)  # 未配插件 Cookie
     assert cli.main(["status"]) == 0
-    assert "未登录" in capsys.readouterr().out
+    out_text = capsys.readouterr().out
+    assert "未登录" in out_text
+    assert "digest login" in out_text and "BILI_COOKIE" in out_text  # 两条出路
+
+
+SCAN_CRED = {"cookies": {"SESSDATA": "s"}, "refresh_token": "r", "login_at": 1700000000}
+
+
+def _login_state(source, logged_in, cred=None):
+    return {"source": source, "logged_in": logged_in, "uname": "测试用户" if logged_in else None,
+            "mid": 42 if logged_in else None, "cred": cred}
+
+
+def test_status_scan_cred_logged_in(monkeypatch, capsys):
+    """扫码凭据有效：JSON 原 6 字段不变、只增 source；不再凭 refresh_token 报「自动续期可用」。"""
+    monkeypatch.setattr(bilibili, "login_state",
+                        lambda: _login_state("credentials.json", True, SCAN_CRED))
+    assert cli.main(["status", "--json"]) == 0
+    info = json.loads(capsys.readouterr().out)
+    assert info == {"logged_in": True, "uname": "测试用户", "mid": 42, "login_at": 1700000000,
+                    "has_refresh_token": True, "cred_path": bilibili.CRED_PATH,
+                    "source": "credentials.json"}
+    assert cli.main(["status"]) == 0
+    out_text = capsys.readouterr().out
+    assert "已登录: 测试用户 (mid 42)" in out_text and "凭据已用" in out_text
+    assert "扫码凭据" in out_text
+    assert "自动续期: 不可用" in out_text and "自动续期: 可用" not in out_text
+    assert "登录态失效后需重新登录" in out_text
+
+
+def test_status_scan_cred_expired(monkeypatch, capsys):
+    monkeypatch.setattr(bilibili, "login_state",
+                        lambda: _login_state("credentials.json", False, SCAN_CRED))
+    monkeypatch.setattr(bilibili, "cookie_from_keys", lambda: None)
+    assert cli.main(["status"]) == 0
+    out_text = capsys.readouterr().out
+    assert "登录态已失效：重新执行 digest login" in out_text
+    assert "credentials.json" not in out_text  # 没配插件 Cookie 就不必提改用
+
+
+def test_status_scan_cred_expired_with_plugin_cookie(monkeypatch, capsys):
+    """扫码凭据失效且已配 BILI_COOKIE：指路重新扫码，并说明删凭据文件即可改用插件 Cookie。"""
+    monkeypatch.setattr(bilibili, "login_state",
+                        lambda: _login_state("credentials.json", False, SCAN_CRED))
+    monkeypatch.setattr(bilibili, "cookie_from_keys", lambda: "SESSDATA=plugin")
+    assert cli.main(["status"]) == 0
+    out_text = capsys.readouterr().out
+    assert "登录态已失效" in out_text and "重新执行 digest login" in out_text
+    assert f"删除 {bilibili.CRED_PATH}" in out_text and "优先生效" in out_text
+
+
+def test_status_plugin_cookie_logged_in(monkeypatch, capsys):
+    """仅插件 Cookie 且有效：如实报已登录，来源 BILI_COOKIE，无凭据天数。"""
+    monkeypatch.setattr(bilibili, "login_state", lambda: _login_state("BILI_COOKIE", True))
+    assert cli.main(["status"]) == 0
+    out_text = capsys.readouterr().out
+    assert "已登录: 测试用户 (mid 42)" in out_text and "插件 Cookie" in out_text
+    assert "凭据已用" not in out_text and "自动续期: 不可用" in out_text
+    assert cli.main(["status", "--json"]) == 0
+    info = json.loads(capsys.readouterr().out)
+    assert info["logged_in"] is True and info["source"] == "BILI_COOKIE"
+    assert info["has_refresh_token"] is False and info["login_at"] is None
+
+
+def test_status_plugin_cookie_expired(monkeypatch, capsys):
+    monkeypatch.setattr(bilibili, "login_state", lambda: _login_state("BILI_COOKIE", False))
+    assert cli.main(["status"]) == 0
+    out_text = capsys.readouterr().out
+    assert "登录态已失效" in out_text and "Chrome 插件" in out_text and "digest login" in out_text
+
+
+def test_status_network_error_keeps_exit_code(monkeypatch):
+    """实测遇网络/风控：CliError 原样上抛（退出码 4），不谎报成未登录/失效。"""
+    def boom():
+        raise CliError("网络不可用: x", 4)
+
+    monkeypatch.setattr(bilibili, "login_state", boom)
+    assert cli.main(["status"]) == 4
 
 
 def test_digest_missing_page(monkeypatch):

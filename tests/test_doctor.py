@@ -1,5 +1,7 @@
 """doctor 单测：key ping 各场景诊断文本 / 本地能力 / 退出码（mock，不打真 API）。"""
 
+import time
+
 import pytest
 
 from bili_digest import config, doctor
@@ -84,16 +86,108 @@ def test_check_key_401_action_points_to_console(monkeypatch):
     assert "https://console.example" in action
 
 
-def test_check_bili_login_states(monkeypatch):
-    monkeypatch.setattr(doctor.bilibili, "load_cred", lambda: None)
+SCAN_CRED = {"cookies": {"SESSDATA": "s", "DedeUserID": "42"}, "refresh_token": "r"}
+
+
+def _login_state(source, logged_in, cred=None):
+    return {"source": source, "logged_in": logged_in, "uname": "测试用户" if logged_in else None,
+            "mid": 42 if logged_in else None, "cred": cred}
+
+
+def test_check_bili_login_no_cred(monkeypatch):
+    """无任何凭据：WARN，文案与指引同前（扫码 / 插件 Cookie 两条出路）。"""
+    monkeypatch.setattr(doctor.bilibili, "login_state", lambda: _login_state(None, False))
+    cap, name, state, status_text, action = doctor.check_bili_login()
+    assert cap == "B站登录态" and name == "凭据文件" and state == doctor.WARN
+    assert "未登录" in status_text and "ASR 路径不受影响" in status_text
+    assert "digest login" in action and "BILI_COOKIE" in action
+
+
+def test_check_bili_login_scan_cred_valid(monkeypatch):
+    """扫码凭据有效：OK，带 mid 与已用天数；不再出现「自动续期可用」，下一步点明失效出路。"""
+    cred = dict(SCAN_CRED, login_at=int(time.time()) - 3 * 86400)
+    monkeypatch.setattr(doctor.bilibili, "login_state",
+                        lambda: _login_state("credentials.json", True, cred))
+    monkeypatch.setattr(doctor.bilibili, "cookie_from_keys", lambda: None)
+    cap, name, state, status_text, action = doctor.check_bili_login()
+    assert (cap, name, state) == ("B站登录态", "扫码凭据", doctor.OK)
+    assert "mid 42" in status_text and "3 天" in status_text
+    assert "自动续期不可用" in status_text and "自动续期可用" not in status_text
+    assert "失效后需重新登录" in status_text
+    assert "失效后" in action and "digest login" in action
+
+
+def test_check_bili_login_scan_cred_expired(monkeypatch):
+    """扫码凭据失效：WARN（不是 FAIL，ASR 不受影响）；已配 BILI_COOKIE 时指路删凭据文件改用。"""
+    monkeypatch.setattr(doctor.bilibili, "login_state",
+                        lambda: _login_state("credentials.json", False, SCAN_CRED))
+    monkeypatch.setattr(doctor.bilibili, "cookie_from_keys", lambda: "SESSDATA=plugin")
+    cap, name, state, status_text, action = doctor.check_bili_login()
+    assert (cap, name, state) == ("B站登录态", "扫码凭据", doctor.WARN)
+    assert "已失效" in status_text
+    assert "digest login" in action and f"删除 {doctor.bilibili.CRED_PATH}" in action
+
+
+def test_check_bili_login_plugin_cookie(monkeypatch):
+    """仅插件 Cookie：有效 OK / 失效 WARN；无凭据天数，出路是回插件重新导出。"""
+    monkeypatch.setattr(doctor.bilibili, "login_state", lambda: _login_state("BILI_COOKIE", True))
+    cap, name, state, status_text, action = doctor.check_bili_login()
+    assert (cap, name, state) == ("B站登录态", "插件 Cookie", doctor.OK)
+    assert "mid 42" in status_text and "天" not in status_text
+    assert "自动续期不可用" in status_text
+    assert "Chrome 插件" in action and "digest login" in action
+
+    monkeypatch.setattr(doctor.bilibili, "login_state", lambda: _login_state("BILI_COOKIE", False))
+    cap, name, state, status_text, action = doctor.check_bili_login()
+    assert (cap, name, state) == ("B站登录态", "插件 Cookie", doctor.WARN)
+    assert "已失效" in status_text and "Chrome 插件" in action
+
+
+def test_check_bili_login_network_error_not_reported_expired(monkeypatch):
+    """实测遇网络/风控：WARN「无法验证登录态」+ 稍后重试，不误报成登录失效、也不是 FAIL。"""
+    def boom():
+        raise CliError("网络不可用: x", 4)
+
+    monkeypatch.setattr(doctor.bilibili, "login_state", boom)
     cap, name, state, status_text, action = doctor.check_bili_login()
     assert cap == "B站登录态" and state == doctor.WARN
-    assert "digest login" in action
-    monkeypatch.setattr(doctor.bilibili, "load_cred",
-                        lambda: {"cookies": {"DedeUserID": "42"}, "login_at": 0, "refresh_token": "r"})
+    assert "无法验证登录态" in status_text and "已失效" not in status_text
+    assert action == "稍后重试 digest doctor"
+
+
+def test_check_bili_login_corrupted_cred_is_fail(monkeypatch):
+    """凭据文件损坏（code 3）不是网络问题：仍 FAIL 并指路重新登录，而不是「稍后重试」。"""
+    def boom():
+        raise CliError("凭据文件损坏，请重新 digest login: x", 3)
+
+    monkeypatch.setattr(doctor.bilibili, "login_state", boom)
     cap, name, state, status_text, action = doctor.check_bili_login()
-    assert state == doctor.OK
-    assert "mid 42" in status_text
+    assert (cap, name, state) == ("B站登录态", "凭据文件", doctor.FAIL)
+    assert "凭据文件损坏" in status_text and action == "重新执行 digest login"
+
+
+class ReadTimeoutResp:
+    """urlopen 返回的上下文管理器：读阶段抛 TimeoutError（不是 URLError）。"""
+    status, headers = 200, None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        raise TimeoutError("timed out")
+
+
+def test_check_bili_login_read_timeout_not_crash(monkeypatch):
+    """读阶段超时经 http() 转成 CliError：落 WARN「无法验证登录态」，而不是裸抛让 doctor 崩溃。"""
+    monkeypatch.setattr(doctor.bilibili, "load_cred", lambda: {"cookies": {"SESSDATA": "s"}})
+    monkeypatch.setattr(doctor.bilibili.urllib.request, "urlopen",
+                        lambda req, timeout=20: ReadTimeoutResp())
+    cap, name, state, status_text, action = doctor.check_bili_login()
+    assert cap == "B站登录态" and state == doctor.WARN
+    assert "无法验证登录态" in status_text and action == "稍后重试 digest doctor"
 
 
 def test_run_capability_grouping_good_and_bad(monkeypatch):
@@ -152,3 +246,15 @@ def test_main_exit_code(monkeypatch, capsys):
         ("读图能力", "k1", doctor.FAIL, "key 无效", "重新生成")])
     assert doctor.main() == 1
     assert "1 项异常" in capsys.readouterr().out
+
+
+def test_main_warn_count(monkeypatch, capsys):
+    """warn 计数取状态列：1 条 WARN → 「1 项可按需优化」，没有则 0。"""
+    rows = [("读图能力", "k1", doctor.OK, "有效", "无需处理"),
+            ("B站登录态", "扫码凭据", doctor.WARN, "登录态已失效", "重新执行 digest login")]
+    monkeypatch.setattr(doctor, "run", lambda: rows)
+    assert doctor.main() == 0
+    assert "体检结论：无异常（1 项可按需优化）" in capsys.readouterr().out
+    monkeypatch.setattr(doctor, "run", lambda: rows[:1])
+    assert doctor.main() == 0
+    assert "体检结论：无异常（0 项可按需优化）" in capsys.readouterr().out

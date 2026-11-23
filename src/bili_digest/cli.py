@@ -119,34 +119,28 @@ def cmd_login(args):
 
 
 def cmd_status(args):
-    cred = bilibili.load_cred()
-    if not cred:
-        if args.json:
-            out(json.dumps({"logged_in": False}, ensure_ascii=False))
-        else:
-            out("未登录：先执行 digest login")
-        return
-    nav = bilibili.api_json(
-        f"{bilibili.API}/x/web-interface/nav",
-        cookie=bilibili.cookie_header(cred["cookies"]),
-    )
+    state = bilibili.login_state()
+    cred = state["cred"] or {}
     info = {
-        "logged_in": nav.get("code") == 0,
-        "uname": (nav.get("data") or {}).get("uname"),
-        "mid": (nav.get("data") or {}).get("mid"),
+        "logged_in": state["logged_in"],
+        "uname": state["uname"],
+        "mid": state["mid"],
         "login_at": cred.get("login_at"),
         "has_refresh_token": bool(cred.get("refresh_token")),
         "cred_path": bilibili.CRED_PATH,
+        "source": state["source"],
     }
     if args.json:
         out(json.dumps(info, ensure_ascii=False, indent=2))
         return
     if not info["logged_in"]:
-        out("登录态已失效：重新执行 digest login")
+        head = "未登录" if info["source"] is None else "登录态已失效"
+        out(f"{head}：{bilibili.login_hint(info['source'])}")
         return
-    age = (int(time.time()) - int(cred.get("login_at", 0))) // 86400
-    out(f"已登录: {info['uname']} (mid {info['mid']})，凭据已用 {age} 天")
-    out(f"自动续期: {'可用' if info['has_refresh_token'] else '不可用（缺 refresh_token）'}")
+    age = f"，凭据已用 {(int(time.time()) - int(cred.get('login_at', 0))) // 86400} 天" if cred else ""
+    out(f"已登录: {info['uname']} (mid {info['mid']}){age}")
+    out(f"凭据来源: {'扫码凭据（credentials.json）' if cred else '插件 Cookie（BILI_COOKIE）'}")
+    out("自动续期: 不可用（B站已改机制），登录态失效后需重新登录")
 
 
 def cmd_mcp(args):
@@ -227,7 +221,7 @@ def build_parser():
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_status)
 
-    p = sub.add_parser("mcp", help="MCP stdio server（8 工具 + 后台 job，需 [mcp] extra）")
+    p = sub.add_parser("mcp", help="MCP stdio server（9 工具 + 后台 job，需 [mcp] extra）")
     p.set_defaults(func=cmd_mcp)
     return parser
 
