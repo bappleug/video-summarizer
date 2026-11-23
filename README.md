@@ -12,14 +12,14 @@
 
 ## 当前状态
 
-**Phase 3（MVP：transcript 管线 CLI + MCP Server）已完成并发布 v1.2.0**。冲刺 S1–S4、S6（含 S6.1–S6.5）、S7（含 S7.2–S7.6）、S8 完成；**S5（SQLite 历史 + 批量队列）未做**；Phase 4 未启动（其中小红书支持已在 S4 完成）。详见 [进度记录](docs/进度记录.md)。
+**Phase 3（MVP：transcript 管线 CLI + MCP Server）已完成并发布 v1.2.0**。冲刺 S1–S4、S6（含 S6.1–S6.5）、S7（含 S7.2–S7.6）、S8 完成；**S5（SQLite 历史 + 批量队列）不做（D-015）**；Phase 4 未启动（其中小红书支持已在 S4 完成）。详见 [进度记录](docs/进度记录.md)。
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | Phase 0 | 工作区搭建：目录重构、文档骨架、vendor 克隆 | ✅ 2026-11-20 |
 | Phase 1 | 调研实测：ASR 基准、两 vendor 实测、云端候选（research/01–05） | ✅ 2026-11-20 |
 | Phase 2 | 架构设计：PRD 定稿、管线拆解、组件抽取方案 | ✅ 2026-11-20 |
-| Phase 3 | MVP：transcript 管线（CLI）+ MCP Server | ✅ 已发布 v1.2.0（S5 未做） |
+| Phase 3 | MVP：transcript 管线（CLI）+ MCP Server | ✅ 已发布 v1.2.0（S5 不做，D-015） |
 | Phase 4 | 易用性：面向非程序员的本地界面；批量与检索 | 待启动（小红书支持已在 S4 完成） |
 
 ## 目录导览
