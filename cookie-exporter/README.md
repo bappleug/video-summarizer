@@ -120,27 +120,21 @@ host 侧覆盖（8 个用例，`tests/test_host.py`）：以真实协议帧通�
 - **不存储**：Cookie 值只在内存中拼接，唯一去向是你主动触发的 keys.env 直写。不写 `console`、不落 `chrome.storage`，弹窗关闭即弃。`chrome.storage` 只存一个不含敏感信息的偏好：上次站点 id。
 - 权限白名单（多余即不合格，有单测看护）：`permissions: ["cookies", "nativeMessaging", "storage"]`。
 
-## 私钥与稳定扩展 ID
+## 稳定扩展 ID（无私钥）
 
-host 的 `allowed_origins` 必须写死扩展 ID，而「加载已解压的扩展程序」默认每次生成随机 ID。因此 `manifest.json` 里放了 `key` 字段（公钥），把扩展 ID 锁定为：
+host 的 `allowed_origins` 必须写死扩展 ID，而「加载已解压的扩展程序」默认按扩展所在路径派生 ID——换目录、换机器都会变。因此 `manifest.json` 里放了 `key` 字段（公钥，随 git 保管），把扩展 ID 固定为：
 
 ```
 cilhmdbgnppkdmeonmdfnijpejfmfclm
 ```
 
-**使用者无需任何密钥文件**：Chrome 只凭 `manifest.json` 里的公钥就能算出这个 ID，clone 仓库后直接加载即可。扩展运行时不读取任何私钥。
-
-**维护者须知**：与该公钥配对的私钥 `extension_key.pem` **不在仓库内、也不要放进本目录**——
-
-- 放进扩展目录会被 Chrome 一并装进浏览器并弹出「This extension includes the key file …」警告；扩展运行并不需要它。
-- 它只由维护者在**仓库外**离线保管（0600，不在任何 git 仓库内）。泄露它的人可以发布同 ID 的冒充扩展、进而通过本 host 写 keys.env。
-- 私钥若丢失，扩展 ID 会变：重新生成密钥对 → 更新 `manifest.key` 与 `install-host.sh` 里的 ID → 所有使用者重跑安装脚本并重新加载扩展。
-- 本目录 `.gitignore` 仍保留 `native/extension_key.pem` 一条，作为防止误提交的兜底。
-- 重新生成密钥的命令（供维护者重建时参考；把私钥生成到仓库外，不要生成到本目录）：
+- **使用者无需任何密钥文件**：Chrome 只凭 `manifest.json` 里的公钥就能算出这个 ID，clone 仓库后直接加载即可。扩展运行时不读取任何私钥。
+- **本插件没有私钥**：不发布 Chrome 应用商店（clone + 开发者模式加载的分发方式），签名私钥已于 2026-11-23 销毁。副作用是良性的——没有任何人（包括维护者）能以本 ID 签发商店包，ID 的不可冒领不依赖保管任何秘密。
+- **不要把 .pem 放进本目录**：放进扩展目录会在 Chrome 加载时触发「This extension includes the key file …」警告，且扩展运行并不需要它；本目录 `.gitignore` 保留 `native/extension_key.pem` 一条作为误提交兜底。
+- 若未来确需以同 ID 发布商店包，或更换 ID：重新生成密钥对 → 更新 `manifest.key` 与 `install-host.sh` 里的 ID → 所有使用者重跑安装脚本并重新加载扩展（ID 会变，等于全体重装）。生成命令（私钥生成到仓库外，不要生成到本目录）：
 
   ```sh
-  KEY=~/.config/ai-tools/cookie-exporter/extension_key.pem   # 仓库外的保管位置
-  mkdir -p "$(dirname "$KEY")" && chmod 700 "$(dirname "$KEY")"
+  KEY=~/path/to/extension_key.pem   # 仓库外
   openssl genrsa -out "$KEY" 2048 && chmod 600 "$KEY"
   openssl rsa -in "$KEY" -pubout -outform DER | base64 | tr -d '\n'   # 贴入 manifest.key
   openssl rsa -in "$KEY" -pubout -outform DER | shasum -a 256         # 前 32 hex → a-p 字母表即新 ID

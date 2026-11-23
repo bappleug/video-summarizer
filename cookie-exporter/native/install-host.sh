@@ -4,7 +4,7 @@
 # 用法：bash cookie-exporter/native/install-host.sh
 set -euo pipefail
 
-# 与 cookie-exporter/manifest.json 的 key 字段（公钥）对应的稳定扩展 ID；配对的私钥由维护者在仓库外保管。
+# 与 cookie-exporter/manifest.json 的 key 字段（公钥，随仓库入库）对应的稳定扩展 ID；本插件不上商店、无私钥。
 EXTENSION_ID="cilhmdbgnppkdmeonmdfnijpejfmfclm"
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
