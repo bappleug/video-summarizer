@@ -35,10 +35,10 @@ cookie-exporter/
 打开「终端」（Terminal），粘贴下面这行并回车：
 
 ```sh
-bash ~/path/to/video-summarizer/cookie-exporter/native/install-host.sh
+bash ~/path/to/ai-tools/bili/tools/cookie-exporter/native/install-host.sh
 ```
 
-（把路径里的 `~/path/to/video-summarizer` 换成本仓库 clone 后的实际位置。）装完**完全退出 Chrome（Cmd+Q）再重开**——Chrome 只在启动时读取助手清单。
+（把路径里的 `~/path/to/ai-tools` 换成本仓库的实际位置。）装完**完全退出 Chrome（Cmd+Q）再重开**——Chrome 只在启动时读取助手清单。
 （截图位：终端运行 install-host.sh 的输出特写）
 
 **第 2 步：装扩展**
@@ -47,7 +47,7 @@ bash ~/path/to/video-summarizer/cookie-exporter/native/install-host.sh
    （截图位：地址栏输入 chrome://extensions 的特写）
 2. 打开页面右上角的**「开发者模式」**开关。
    （截图位：右上角开关，打开后变为蓝色）
-3. 点击左上角**「加载已解压的扩展程序」**，选中本目录 `cookie-exporter/`（即包含 `manifest.json` 的文件夹）。
+3. 点击左上角**「加载已解压的扩展程序」**，选中本目录 `tools/cookie-exporter/`（即包含 `manifest.json` 的文件夹）。
 4. 列表出现「**Cookie 导出助手**」即装好。建议点击工具栏拼图图标 🧩 把它**固定**到工具栏。
 5. 详情页确认扩展 ID 为 `cilhmdbgnppkdmeonmdfnijpejfmfclm`（与助手注册的允许名单一致，直写才能通）。
 
@@ -72,7 +72,7 @@ bash ~/path/to/video-summarizer/cookie-exporter/native/install-host.sh
 本机已装 node（≥ 20）与 python3 即可，无需安装任何依赖：
 
 ```sh
-cd cookie-exporter
+cd tools/cookie-exporter
 npm test           # = node --test（扩展侧 30 例）+ python3 unittest（host 侧 8 例，子进程全链路）
 ```
 
