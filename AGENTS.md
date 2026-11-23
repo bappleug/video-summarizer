@@ -2,14 +2,14 @@
 
 本目录是**视频内容提取与总结**的调研 + 工具集工作区：以哔哩哔哩为核心（兼顾小红书等平台），目标是形成「transcript 抓取（字幕优先，无字幕回退本地语音识别）→（可选）LLM 总结报告」的完整能力。
 
-（git 仓库根在上一级 `ai-tools/`，`bili/` 是其唯一子树，在本目录内直接执行 git 命令即可。）
+（git 仓库根即本目录 `ai-tools/video-parser/`，在本目录内直接执行 git 命令即可。远端 `bappleug/video-summarizer` 的目录布局与本工作区不同，分支与同步约定见文末「Git」节。）
 
 当前所处阶段见 [docs/进度记录.md](docs/进度记录.md)，需求定义见 [docs/PRD.md](docs/PRD.md)。
 
 ## 目录结构
 
 ```
-bili/
+video-parser/
 ├── AGENTS.md              # 本文件：规范与目录说明（随项目演进持续更新）
 ├── README.md              # 项目总览与导览
 ├── docs/
@@ -63,6 +63,9 @@ bili/
 
 ### Git
 - 本仓库文档与工具代码全部入库；`vendors/`、`runs/` 已 gitignore。
+- **远端与分支**（2026-11-23 重建）：远端 `origin` = `bappleug/video-summarizer`（公开仓，车队 `uvx` 安装源，根布局不可动）。本地 `main` 与 `origin/main` 对齐、**不在其上提交**；日常工作在 `workspace` 分支（覆盖整个工作区，历史续接发布仓）。
+- **工作区 ↔ 发布仓映射**：远端根目录 ↔ `tools/bili-digest/`；远端 `cookie-exporter/` ↔ `tools/cookie-exporter/`；`docs/`、`tools/bili-subtitle/`、`tools/asr-bench/` 仅存在于工作区。已知 3 个文件含布局相对路径（`tools/cookie-exporter/` 下 `README.md`、`js/exporters.js`、`tests/exporters.test.js`），同步到任一侧时须按目标布局改写。核对两侧差异用 `git diff -M --name-status main workspace`。
+- `workspace` 分支默认**不推送**（含内部文档，且远端为公开仓）；推送前须用户确认。
 - 提交时机自主判断：完成一个阶段或一组自洽的改动即提交，保持提交粒度可回溯。
 - **subagent 实施期间禁用 `git add -A`/`git add .`**：并行写入未验收的文件会被误扫入库。一律显式列出路径提交；subagent 的产出待主 agent 验收后由主 agent 提交。
 - 提交信息遵循：一行式概括，中文，不加任何 AI 署名页脚或共同作者标签。

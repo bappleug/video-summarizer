@@ -58,7 +58,7 @@ pip install -e . --no-deps    # 装入口（bili-transcriber / -cli / -mcp）
 
 ```bash
 .venv/bin/python -m app.cli --set engine=sensevoice \
-  --set model_dir=/Users/raymin/workspace/ray/ai-tools/bili/runs/asr-bench/models \
+  --set model_dir=/Users/raymin/workspace/ray/ai-tools/video-parser/runs/asr-bench/models \
   --set language=zh --set output_dir=…/runs/eval-btc/out
 ```
 
