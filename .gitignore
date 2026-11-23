@@ -7,8 +7,12 @@ vendors/
 # Python
 __pycache__/
 *.pyc
+*.egg-info/
 .venv/
 venv/
+build/
+dist/
+.pytest_cache/
 
 # 系统杂项
 .DS_Store

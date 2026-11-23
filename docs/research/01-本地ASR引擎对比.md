@@ -7,7 +7,7 @@
 - **机器**：Apple M4 Pro / 64GB RAM / macOS（arm64）。**Intel 侧无实机，兼容性为架构层面判断，速度未实测**，报告中已标注。
 - **音频**：`runs/asr-bench/audio/slice_600_300.wav`，300 秒 / 16kHz / 单声道 / s16，中文单人演讲（B站12周年演讲 BV1CV411s7jd P1 的 10:00–15:00，陈睿讲话，语速正常、吐字清晰）。
 - **计时口径**：`/usr/bin/time -lp` 的 **real（wall time，含模型加载与进程启动）** 与 **maximum resident set size（peak RSS）**。各引擎脚本另在 stderr 自报「纯转写耗时」（不含模型加载），表中单独列出备查。四个引擎口径一致：whisper.cpp 沿用先前实测；mlx / faster / sensevoice 为本次重跑取数（模型已缓存，无下载时间混入）。
-- **交叉 CER 口径**：`tools/asr-bench/cer.py`（NFKC、去标点空白、小写后的字符级编辑距离）。
+- **交叉 CER 口径**：`scripts/asr-bench/cer.py`（NFKC、去标点空白、小写后的字符级编辑距离）。
 - **模型下载**：hf.co 直连不通，HF 模型一律经 `HF_ENDPOINT=https://hf-mirror.com`；SenseVoice 经 GitHub release 直连。
 
 **Caveat（重要）**：
@@ -93,7 +93,7 @@
 **SenseVoice int8（pip sherpa-onnx，CPU）**
 - 质量：内容完整连贯，**唯一自带标点**，「入站考试」全场唯一正确；短板是数字 ITN 毛刺（「百70」「一0百道」）和专有名词无优势（风险少年、B检）。
 - 速度/资源：19.5s（15.4×）纯 CPU 即可达成，**模型仅 228MB**（体积优势数量级领先）；RSS 2.93GB 偏高（ONNX Runtime 加载 + 300s 音频一次性整段 decode），但对 64GB/16GB 机器均可接受。
-- 工程化：pip 装 sherpa-onnx（官方多平台轮子，x86_64 支持明确），模型 GitHub 直连可下；注意 sherpa-onnx 2.0.2 Python API 无 `read_wave`，需自读 wav（`tools/asr-bench/run_sense.py` 已修，用标准库 wave + numpy）。原生中英日韩粤五语，贴合 B站场景，但非通用多语种。
+- 工程化：pip 装 sherpa-onnx（官方多平台轮子，x86_64 支持明确），模型 GitHub 直连可下；注意 sherpa-onnx 2.0.2 Python API 无 `read_wave`，需自读 wav（`scripts/asr-bench/run_sense.py` 已修，用标准库 wave + numpy）。原生中英日韩粤五语，贴合 B站场景，但非通用多语种。
 
 ## 6. 选型建议
 
@@ -106,8 +106,8 @@
 ## 7. 复现
 
 ```bash
-# 环境：tools/asr-bench/.venv（faster-whisper 1.2.1 / mlx-whisper 0.4.3 / sherpa-onnx 2.0.2）
-cd tools/asr-bench
+# 环境：scripts/asr-bench/.venv（faster-whisper 1.2.1 / mlx-whisper 0.4.3 / sherpa-onnx 2.0.2）
+cd scripts/asr-bench
 # whisper.cpp（brew whisper-cli）
 /usr/bin/time -lp whisper-cli -m ../../runs/asr-bench/models/ggml-large-v3-turbo.bin \
   -l zh -f ../../runs/asr-bench/audio/slice_600_300.wav -otxt -of ../../runs/asr-bench/out/whisper_cpp_turbo

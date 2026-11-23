@@ -1,6 +1,6 @@
 """B站平台模块：登录态 / cookie 续期 / WBI 签名 / 视频定位 / 字幕抓取。
 
-复制自 tools/bili-subtitle/bili.py，改造点：
+复制自 scripts/bili-subtitle/bili.py，改造点：
 - 改造为模块函数供 pipeline 调用，去掉 CLI 入口与输出格式渲染（归 pipeline.py）
 - CliError / log 移到 bili_digest.errors
 - 新增 page_hint()：从 URL 的 ?p=N 解析分P提示

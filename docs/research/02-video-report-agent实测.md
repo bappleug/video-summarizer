@@ -94,7 +94,7 @@ HF_ENDPOINT=https://hf-mirror.com ./venv/bin/video-report --runs runs transcribe
 ### d. 音频下载用什么？依赖多重？
 
 - **yt-dlp**（Python 包，venv 内 15MB），外包一层子进程 worker（`download_worker.py`）：monkey-patch B站提取器实现 **backupUrl 备用节点重试**（download.log 里实测切换过 5 个 upos-sz-* 节点）与**充电「试看」内容检测**（拒绝把试看当完整视频）；抖音/小红书提取器补丁也在这里注入。ffmpeg 转 16kHz mono WAV 并 ffprobe 校验。
-- 与我们 `tools/asr-bench/fetch_audio.py`（`x/player/playurl?fnval=16` 自请求）思路不同：它不自请求 playurl，完全复用 yt-dlp 的 B站 DASH 提取。免登录音频这条两者等价。
+- 与我们 `scripts/asr-bench/fetch_audio.py`（`x/player/playurl?fnval=16` 自请求）思路不同：它不自请求 playurl，完全复用 yt-dlp 的 B站 DASH 提取。免登录音频这条两者等价。
 - 依赖重量：核心链（httpx/yt-dlp/pysubs2/pydantic/dotenv/opencc）很轻；**1.2GB venv 里 torch(491MB)+mlx(206MB)+llvmlite(131MB)+scipy(83MB) 全是 `mlx-whisper` 拖进来的**，playwright(147MB) 是 PNG 导出拖的。若只取材不本地转写，纯 Python 依赖 <100MB。
 
 ## 4. 工程评估

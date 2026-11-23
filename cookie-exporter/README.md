@@ -1,6 +1,6 @@
 # cookie-exporter — Cookie 导出助手（Chrome MV3 扩展）
 
-一个极简的 Chrome 浏览器插件：检测**小红书 / 哔哩哔哩**的登录态，点一下按钮就把完整 Cookie **直写**进 `~/.config/ai-tools/bili-digest/keys.env`（Native Messaging 本机助手，免手动粘贴）。面向不想打开开发者工具翻 Application 面板的非程序员，是 [bili-digest](../bili-digest/) 工具链的配套，但本身是通用工具，加站点只改一个文件。
+一个极简的 Chrome 浏览器插件：检测**小红书 / 哔哩哔哩**的登录态，点一下按钮就把完整 Cookie **直写**进 `~/.config/ai-tools/bili-digest/keys.env`（Native Messaging 本机助手，免手动粘贴）。面向不想打开开发者工具翻 Application 面板的非程序员，是 [bili-digest](../README.md) 工具链的配套，但本身是通用工具，加站点只改一个文件。
 
 - 零第三方库：原生 JavaScript + python3 标准库，无构建步骤。
 - 零网络权限：插件与本机助手都不发起任何网络请求（见下方「安全模型」）。
@@ -35,10 +35,10 @@ cookie-exporter/
 打开「终端」（Terminal），粘贴下面这行并回车：
 
 ```sh
-bash ~/path/to/ai-tools/video-parser/tools/cookie-exporter/native/install-host.sh
+bash ~/path/to/video-summarizer/cookie-exporter/native/install-host.sh
 ```
 
-（把路径里的 `~/path/to/ai-tools` 换成本仓库的实际位置。）装完**完全退出 Chrome（Cmd+Q）再重开**——Chrome 只在启动时读取助手清单。
+（把路径里的 `~/path/to/video-summarizer` 换成本仓库 clone 后的实际位置。）装完**完全退出 Chrome（Cmd+Q）再重开**——Chrome 只在启动时读取助手清单。
 （截图位：终端运行 install-host.sh 的输出特写）
 
 **第 2 步：装扩展**
@@ -47,7 +47,7 @@ bash ~/path/to/ai-tools/video-parser/tools/cookie-exporter/native/install-host.s
    （截图位：地址栏输入 chrome://extensions 的特写）
 2. 打开页面右上角的**「开发者模式」**开关。
    （截图位：右上角开关，打开后变为蓝色）
-3. 点击左上角**「加载已解压的扩展程序」**，选中本目录 `tools/cookie-exporter/`（即包含 `manifest.json` 的文件夹）。
+3. 点击左上角**「加载已解压的扩展程序」**，选中本目录 `cookie-exporter/`（即包含 `manifest.json` 的文件夹）。
 4. 列表出现「**Cookie 导出助手**」即装好。建议点击工具栏拼图图标 🧩 把它**固定**到工具栏。
 5. 详情页确认扩展 ID 为 `cilhmdbgnppkdmeonmdfnijpejfmfclm`（与助手注册的允许名单一致，直写才能通）。
 
@@ -64,7 +64,7 @@ bash ~/path/to/ai-tools/video-parser/tools/cookie-exporter/native/install-host.s
 ## 常见问题
 
 - **明明登录了，却显示「未登录」？** 多半是登录网站和安装插件不在同一个 Chrome Profile，或在隐身窗口里登录的。请在同一个 Profile 下登录后重试。
-- **点了导出报「本机助手未安装」？** 按状态行里显示的命令运行 install-host.sh（在 ai-tools/video-parser 仓库根目录下运行，或自行补全绝对路径），然后**完全退出 Chrome（Cmd+Q）再重开**。仍失败时确认扩展详情页 ID 是 `cilhmdbgnppkdmeonmdfnijpejfmfclm`（与 host 注册的 allowed_origins 一致才会放行）。
+- **点了导出报「本机助手未安装」？** 按状态行里显示的命令运行 install-host.sh（在本仓库根目录下运行，或自行补全绝对路径），然后**完全退出 Chrome（Cmd+Q）再重开**。仍失败时确认扩展详情页 ID 是 `cilhmdbgnppkdmeonmdfnijpejfmfclm`（与 host 注册的 allowed_origins 一致才会放行）。
 - **Cookie 会过期吗？** 会。网站登录态失效后重新登录、再点一次导出即可。
 
 ## 运行测试（开发者）
@@ -72,7 +72,7 @@ bash ~/path/to/ai-tools/video-parser/tools/cookie-exporter/native/install-host.s
 本机已装 node（≥ 20）与 python3 即可，无需安装任何依赖：
 
 ```sh
-cd tools/cookie-exporter
+cd cookie-exporter
 npm test           # = node --test（扩展侧 30 例）+ python3 unittest（host 侧 8 例，子进程全链路）
 ```
 

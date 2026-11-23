@@ -1,6 +1,6 @@
 """mlx-whisper 转写后端（仅 Apple Silicon）。
 
-转写调用复制自 tools/asr-bench/run_mlx.py，对齐 asr.base.Transcriber 协议。
+转写调用复制自 scripts/asr-bench/run_mlx.py，对齐 asr.base.Transcriber 协议。
 mlx 相关 import 延迟到方法内，保证 core 零第三方依赖。
 """
 

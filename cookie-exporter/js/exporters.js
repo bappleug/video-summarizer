@@ -16,7 +16,7 @@ export const KEYS_ENV_PATH = "~/.config/ai-tools/bili-digest/keys.env";
 
 // host 安装命令。扩展无法感知仓库在本机的绝对位置，只能给仓库相对路径，
 // 需在 ai-tools 仓库根目录（或自行补全路径）运行。
-export const INSTALL_CMD = "bash tools/cookie-exporter/native/install-host.sh";
+export const INSTALL_CMD = "bash cookie-exporter/native/install-host.sh";
 
 export const nativeExporter = {
   id: "native",

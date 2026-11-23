@@ -199,4 +199,4 @@
 | §3.1 GLM-5.3-Flash | 价格页在售 | 实测可用、延迟 2.1s；注意 Flash 档也带 reasoning tokens |
 | §4.4 deepseek-chat 状态 | 未能核实 | 确认为 deepseek-flash 的**别名**，可正常调用（响应回显新名） |
 
-来源：本节为 2026-11-20 实测（curl 直连 + `tools/asr-bench/cer.py`，素材见 `runs/asr-bench/`）。命令中密钥以 `$SILICONFLOW_API_KEY` / `$ZHIPU_API_KEY` / `$DEEPSEEK_API_KEY` 环境变量注入（`~/.config/ai-tools/bili-digest/keys.env`），值未落盘。
+来源：本节为 2026-11-20 实测（curl 直连 + `scripts/asr-bench/cer.py`，素材见 `runs/asr-bench/`）。命令中密钥以 `$SILICONFLOW_API_KEY` / `$ZHIPU_API_KEY` / `$DEEPSEEK_API_KEY` 环境变量注入（`~/.config/ai-tools/bili-digest/keys.env`），值未落盘。

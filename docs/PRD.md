@@ -27,7 +27,7 @@
 ```
 视频 URL
   → 元信息（标题/UP/时长/分P）
-  → [字幕优先] 有字幕轨 → 直接得到 transcript        ← tools/bili-subtitle（已有）
+  → [字幕优先] 有字幕轨 → 直接得到 transcript        ← scripts/bili-subtitle（已有）
   → [ASR 回退] 无字幕 → 下载 DASH 音频 → ASR（云端硅基流动保底；Apple Silicon 可选本地 mlx，D-010）→ transcript
   → [增值] LLM 总结 → 结构化报告（Markdown；HTML 未实现）
 ```
@@ -70,7 +70,7 @@
 
 ## 7. 技术路线（v1.0 已定案：自研整合，D-007）
 
-**架构 = 以 `tools/bili-subtitle` 为核心的自研管线，嵌入两个开源项目的抽取组件：**
+**架构 = 以 `scripts/bili-subtitle` 为核心的自研管线，嵌入两个开源项目的抽取组件：**
 
 ```
 URL → 平台识别（B站 / 小红书 / 本地文件）

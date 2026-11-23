@@ -43,7 +43,7 @@ test("注册表：1.2.0 只含 native 一个 exporter，结构完整", () => {
 test("host 名与展示路径常量与 native/ 侧约定一致", () => {
   assert.equal(NATIVE_HOST_NAME, "com.raymin.cookie_exporter");
   assert.equal(KEYS_ENV_PATH, "~/.config/ai-tools/bili-digest/keys.env");
-  assert.equal(INSTALL_CMD, "bash tools/cookie-exporter/native/install-host.sh");
+  assert.equal(INSTALL_CMD, "bash cookie-exporter/native/install-host.sh");
 });
 
 // ---- native exporter ----
